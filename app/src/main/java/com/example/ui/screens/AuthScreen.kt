@@ -84,11 +84,12 @@ import com.example.ui.viewmodel.AilViewModel
 @Composable
 fun AuthScreen(
     viewModel: AilViewModel,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
+    initialRegisterMode: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) } // 0 = Phone, 1 = Email
-    var isRegisterMode by remember { mutableStateOf(false) }
+    var isRegisterMode by remember { mutableStateOf(initialRegisterMode) }
+    var selectedMethodTab by remember { mutableIntStateOf(0) } // 0 = Phone, 1 = Email
 
     // Form inputs
     var phoneNumber by remember { mutableStateOf("") }
@@ -117,15 +118,17 @@ fun AuthScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.testTag("auth_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour",
-                            tint = Color.Black
-                        )
+                    if (onBack != null) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.testTag("auth_back_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Retour",
+                                tint = Color.Black
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -172,14 +175,68 @@ fun AuthScreen(
             )
 
             Text(
-                text = "Rejoignez le réseau des jeunes engagés pour le climat et l'emploi vert",
+                text = "Rejoignez le réseau des jeunes engagés pour le climat et l'emploi vert en Côte d'Ivoire",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 modifier = Modifier.padding(horizontal = 20.dp),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Mode Selector: Inscription vs Connexion
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Surface(
+                    onClick = { isRegisterMode = true },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("auth_mode_register_tab"),
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isRegisterMode) AilEmerald else Color.Transparent
+                ) {
+                    Box(
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "S'inscrire (Nouveau)",
+                            fontWeight = if (isRegisterMode) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isRegisterMode) Color.White else Color.DarkGray,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = { isRegisterMode = false },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("auth_mode_login_tab"),
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (!isRegisterMode) AilEmerald else Color.Transparent
+                ) {
+                    Box(
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Se connecter",
+                            fontWeight = if (!isRegisterMode) FontWeight.Bold else FontWeight.Medium,
+                            color = if (!isRegisterMode) Color.White else Color.DarkGray,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Main Auth Card
             Card(
@@ -189,14 +246,14 @@ fun AuthScreen(
                 elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
-                    // Mode Tabs (Phone vs Email)
+                    // Method Tabs (Phone vs Email)
                     TabRow(
-                        selectedTabIndex = selectedTabIndex,
+                        selectedTabIndex = selectedMethodTab,
                         containerColor = AilMintBackground,
                         contentColor = AilEmerald,
                         indicator = { tabPositions ->
                             TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                                Modifier.tabIndicatorOffset(tabPositions[selectedMethodTab]),
                                 color = AilEmerald,
                                 height = 3.dp
                             )
@@ -205,42 +262,42 @@ fun AuthScreen(
                             .clip(RoundedCornerShape(12.dp))
                     ) {
                         Tab(
-                            selected = selectedTabIndex == 0,
-                            onClick = { selectedTabIndex = 0 },
+                            selected = selectedMethodTab == 0,
+                            onClick = { selectedMethodTab = 0 },
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = Icons.Default.Phone,
                                         contentDescription = null,
                                         modifier = Modifier.size(16.dp),
-                                        tint = if (selectedTabIndex == 0) AilEmerald else Color.Gray
+                                        tint = if (selectedMethodTab == 0) AilEmerald else Color.Gray
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "Numéro 🇨🇮",
-                                        fontWeight = if (selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selectedTabIndex == 0) AilEmerald else Color.Gray
+                                        fontWeight = if (selectedMethodTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selectedMethodTab == 0) AilEmerald else Color.Gray
                                     )
                                 }
                             }
                         )
 
                         Tab(
-                            selected = selectedTabIndex == 1,
-                            onClick = { selectedTabIndex = 1 },
+                            selected = selectedMethodTab == 1,
+                            onClick = { selectedMethodTab = 1 },
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = Icons.Default.Email,
                                         contentDescription = null,
                                         modifier = Modifier.size(16.dp),
-                                        tint = if (selectedTabIndex == 1) AilEmerald else Color.Gray
+                                        tint = if (selectedMethodTab == 1) AilEmerald else Color.Gray
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "Email ✉️",
-                                        fontWeight = if (selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selectedTabIndex == 1) AilEmerald else Color.Gray
+                                        fontWeight = if (selectedMethodTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selectedMethodTab == 1) AilEmerald else Color.Gray
                                     )
                                 }
                             }
@@ -255,7 +312,8 @@ fun AuthScreen(
                             OutlinedTextField(
                                 value = fullName,
                                 onValueChange = { fullName = it },
-                                label = { Text("Nom et Prénoms") },
+                                label = { Text("Nom et Prénoms complets *") },
+                                placeholder = { Text("Ex: Kouamé Sylvain") },
                                 leadingIcon = {
                                     Icon(Icons.Default.Person, contentDescription = null, tint = AilEmerald)
                                 },
@@ -276,7 +334,7 @@ fun AuthScreen(
                                 OutlinedTextField(
                                     value = city,
                                     onValueChange = { city = it },
-                                    label = { Text("Ville") },
+                                    label = { Text("Ville *") },
                                     leadingIcon = {
                                         Icon(Icons.Default.LocationCity, contentDescription = null, tint = AilEmerald)
                                     },
@@ -314,11 +372,11 @@ fun AuthScreen(
                     }
 
                     // Tab 0: Phone Number Connection
-                    if (selectedTabIndex == 0) {
+                    if (selectedMethodTab == 0) {
                         OutlinedTextField(
                             value = phoneNumber,
                             onValueChange = { phoneNumber = it },
-                            label = { Text("Numéro de téléphone ivoirien") },
+                            label = { Text("Numéro de téléphone ivoirien *") },
                             placeholder = { Text("Ex: 07 89 71 02 89") },
                             leadingIcon = {
                                 Row(
@@ -381,6 +439,8 @@ fun AuthScreen(
                             onClick = {
                                 if (phoneNumber.isBlank()) {
                                     viewModel.showToast("Veuillez saisir votre numéro de téléphone")
+                                } else if (isRegisterMode && fullName.isBlank()) {
+                                    viewModel.showToast("Veuillez renseigner votre nom et prénoms pour l'inscription")
                                 } else {
                                     viewModel.loginWithPhone(
                                         phoneNumber = phoneNumber,
@@ -388,7 +448,7 @@ fun AuthScreen(
                                         city = city,
                                         quartier = quartier
                                     )
-                                    onBack()
+                                    onBack?.invoke()
                                 }
                             },
                             modifier = Modifier
@@ -401,7 +461,7 @@ fun AuthScreen(
                             Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isRegisterMode) "Créer mon profil bénévole" else "Se connecter par SMS / Téléphone",
+                                text = if (isRegisterMode) "Créer mon compte éco-citoyen" else "Se connecter par téléphone",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
@@ -409,11 +469,11 @@ fun AuthScreen(
                     }
 
                     // Tab 1: Email & Password Connection
-                    if (selectedTabIndex == 1) {
+                    if (selectedMethodTab == 1) {
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
-                            label = { Text("Adresse Email") },
+                            label = { Text("Adresse Email *") },
                             placeholder = { Text("Ex: membre@ail4c-ci.org") },
                             leadingIcon = {
                                 Icon(Icons.Default.Email, contentDescription = null, tint = AilEmerald)
@@ -512,6 +572,8 @@ fun AuthScreen(
                             onClick = {
                                 if (email.isBlank() || !email.contains("@")) {
                                     viewModel.showToast("Veuillez saisir une adresse email valide")
+                                } else if (isRegisterMode && fullName.isBlank()) {
+                                    viewModel.showToast("Veuillez renseigner votre nom et prénoms pour l'inscription")
                                 } else {
                                     viewModel.loginWithEmail(
                                         email = email,
@@ -519,7 +581,7 @@ fun AuthScreen(
                                         city = city,
                                         quartier = quartier
                                     )
-                                    onBack()
+                                    onBack?.invoke()
                                 }
                             },
                             modifier = Modifier
@@ -532,7 +594,7 @@ fun AuthScreen(
                             Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isRegisterMode) "Créer mon compte Email" else "Se connecter par Email",
+                                text = if (isRegisterMode) "Créer mon compte par email" else "Se connecter par email",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
@@ -571,7 +633,7 @@ fun AuthScreen(
 
             // Quick Demo & Guest options
             Text(
-                text = "OU",
+                text = "OU ACCÉDER DIRECTEMENT",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.Gray,
                 fontWeight = FontWeight.Bold
@@ -590,7 +652,7 @@ fun AuthScreen(
                             city = "Bouaké",
                             quartier = "Tchelekro"
                         )
-                        onBack()
+                        onBack?.invoke()
                     }
                     .testTag("auth_demo_login_button"),
                 shape = RoundedCornerShape(16.dp),
@@ -624,7 +686,7 @@ fun AuthScreen(
                             color = AilEmeraldDark
                         )
                         Text(
-                            text = "Accéder directement avec le profil pré-rempli",
+                            text = "Accéder immédiatement avec le profil pré-configuré",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.DarkGray,
                             fontSize = 11.sp
@@ -639,7 +701,7 @@ fun AuthScreen(
             OutlinedButton(
                 onClick = {
                     viewModel.loginAsGuest()
-                    onBack()
+                    onBack?.invoke()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -673,7 +735,7 @@ fun AuthScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Données sécurisées & Base de données Locale Protégée",
+                    text = "Données protégées • ONG AIL4C Côte d'Ivoire",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray,
                     fontSize = 11.sp

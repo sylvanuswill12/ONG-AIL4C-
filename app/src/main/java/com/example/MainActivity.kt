@@ -133,11 +133,22 @@ fun AilAppMain(viewModel: AilViewModel) {
         )
     }
 
-    // Modal Auth Screen if opened via quick login
+    // If no user account is logged in / registered, display AuthScreen first at startup
+    if (userProfile == null) {
+        AuthScreen(
+            viewModel = viewModel,
+            onBack = null,
+            initialRegisterMode = true
+        )
+        return
+    }
+
+    // Modal Auth Screen if opened via quick login or profile switch
     if (isAuthDialogOpen) {
         AuthScreen(
             viewModel = viewModel,
-            onBack = { viewModel.closeAuthDialog() }
+            onBack = { viewModel.closeAuthDialog() },
+            initialRegisterMode = false
         )
         return
     }
