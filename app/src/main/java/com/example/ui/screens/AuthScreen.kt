@@ -165,7 +165,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "ONG AIL4C Bouaké",
+                text = "ONG AIL4C",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = AilEmeraldDark
@@ -618,7 +618,7 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Connexion Rapide Démo • Bénévole Bouaké",
+                            text = "Connexion Rapide Démo • Bénévole Engagé",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = AilEmeraldDark
@@ -673,7 +673,7 @@ fun AuthScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Données sécurisées avec Firebase & Base de données Locale",
+                    text = "Données sécurisées & Base de données Locale Protégée",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray,
                     fontSize = 11.sp

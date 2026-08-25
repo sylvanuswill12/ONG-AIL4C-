@@ -431,7 +431,7 @@ fun ProfileScreen(
 
                         ProfileBadgeItem(
                             title = "Champion Vert",
-                            desc = "Leader Bouaké",
+                            desc = "Leader Climat",
                             isUnlocked = user.ecoPoints >= 100
                         )
                     }

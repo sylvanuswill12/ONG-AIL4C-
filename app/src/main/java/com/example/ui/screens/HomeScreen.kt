@@ -183,7 +183,7 @@ fun HomeScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (userProfile != null) "Bonjour, ${userProfile?.fullName}" else "Bienvenue sur AIL4C Bouaké !",
+                            text = if (userProfile != null) "Bonjour, ${userProfile?.fullName}" else "Bienvenue sur AIL4C !",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black
@@ -257,7 +257,7 @@ fun HomeScreen(
                             )
                         }
                         Text(
-                            text = "Je suis votre Éco-Assistante IA. Posez-moi vos questions sur nos actions à Bouaké.",
+                            text = "Je suis votre Éco-Assistante IA. Posez-moi vos questions sur nos actions écologiques et citoyennes.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.DarkGray,
                             fontSize = 11.sp,
@@ -298,8 +298,8 @@ fun HomeScreen(
         item {
             Spacer(modifier = Modifier.height(4.dp))
             SpotlightHeroCard(
-                title = "Grande Campagne : 25 000 Arbres pour Bouaké",
-                subtitle = "Avec la jeunesse locale & l'appui de l'UNFPA",
+                title = "Grande Campagne : 25 000 Arbres pour le Climat",
+                subtitle = "Avec la jeunesse citoyenne & l'appui de l'UNFPA",
                 category = "Reboisement",
                 imageName = "img_hero_reforestation",
                 progress = 0.50f,
@@ -359,7 +359,7 @@ fun HomeScreen(
         item {
             Spacer(modifier = Modifier.height(16.dp))
             SectionHeader(
-                title = "Notre Impact à Bouaké",
+                title = "Notre Impact Écologique & Social",
                 subtitle = "Des résultats concrets mesurés sur le terrain"
             )
             LazyRow(
@@ -502,7 +502,7 @@ fun HomeScreen(
                                 color = Color(0xFF1877F2)
                             )
                             Text(
-                                text = "Suivez nos directs & actions à Bouaké",
+                                text = "Suivez nos directs & actions citoyennes",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -589,7 +589,7 @@ fun HomeScreen(
                                 color = AilEmerald
                             )
                             Text(
-                                text = "Bouaké, Région du Gbêkê",
+                                text = "Côte d'Ivoire • Siège National",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

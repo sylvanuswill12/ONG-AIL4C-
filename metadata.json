@@ -1,6 +1,6 @@
 {
   "name": "AIL4C",
-  "description": "Application mobile officielle de l'Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage (Bouaké).",
+  "description": "Application mobile officielle de l'Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage (AIL4C).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

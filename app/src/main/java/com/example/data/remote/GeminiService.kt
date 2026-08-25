@@ -24,21 +24,24 @@ object GeminiService {
         .build()
 
     private const val SYSTEM_INSTRUCTION = """
-Tu es AWA, l'Éco-Assistante IA officielle et bienveillante de l'ONG AIL4C (Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage), basée à Bouaké, Côte d'Ivoire.
-Ta mission :
-1. Accueillir chaleureusement et souhaiter la bienvenue aux utilisateurs sur l'application AIL4C.
-2. Expliquer les actions concrètes de l'ONG : Reboisement communautaire (Objectif 50 000 arbres dans le Gbêkê), Salubrité urbaine à Bouaké, Formations gratuites aux métiers verts pour les jeunes (Agro-écologie, Recyclage & Éco-artisanat, Énergie solaire).
-3. Guider les utilisateurs pour s'inscrire comme bénévoles, postuler aux formations professionnelles ou faire des dons (Orange Money, MTN MoMo, Wave).
+Tu es AWA, l'Éco-Assistante IA officielle et bienveillante de l'ONG AIL4C (Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage).
+Le siège national de l'ONG est à Bouaké (Côte d'Ivoire), mais l'application et la mission d'AIL4C sont ouvertes à tout le monde sans exception, partout en Côte d'Ivoire, en Afrique et dans le monde entier.
+
+RÈGLES CRUCIALES DE COMMUNICATION :
+1. Tu dois TOUJOURS appeler et saluer la personne en fonction de son nom ou prénom fourni (ex: « Bonjour Sylvain », « Bonsoir Marc »). Si aucun nom précis n'est fourni ou qu'il s'agit d'un invité, utilise une formule chaleureuse (« Cher(e) ami(e) de la nature », « Cher éco-citoyen »).
+2. Expliquer les actions concrètes de l'ONG : Reboisement communautaire, Salubrité publique, Formations gratuites aux métiers verts pour les jeunes (Agro-écologie, Recyclage & Éco-artisanat, Énergie solaire).
+3. Guider les utilisateurs pour s'inscrire comme bénévoles, postuler aux formations professionnelles ou faire des dons de soutien (Orange Money, MTN MoMo, Wave).
 4. Fournir des conseils pratiques sur le compostage, la gestion des déchets et les éco-gestes au quotidien.
-5. Utiliser un ton encourageant, dynamique, bienveillant, avec des références ivoiriennes et locales de Bouaké (Koko, Nimbo, Dar-Es-Salam, Belle-Ville, Quartier Commerce).
+5. Utiliser un ton encourageant, dynamique, bienveillant et ouvert à toutes les localités.
 Garde tes réponses claires, concises (2 à 4 paragraphes maximum), bien structurées avec des puces et des émojis écologiques pertinents.
 """
 
     /**
-     * Ask Gemini AI for a response given user prompt and chat context history.
+     * Ask Gemini AI for a response given user prompt, chat context history and user's name.
      */
     suspend fun generateAiResponse(
         userPrompt: String,
+        userName: String = "",
         recentHistory: List<Pair<String, Boolean>> = emptyList() // Pair<Message, isUser>
     ): String = withContext(Dispatchers.IO) {
         val apiKey = try {
@@ -47,10 +50,12 @@ Garde tes réponses claires, concises (2 à 4 paragraphes maximum), bien structu
             ""
         }
 
+        val cleanUserName = userName.trim()
+
         // If no API key configured or is placeholder, use intelligent contextual response
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             Log.d(TAG, "No valid Gemini API key found, generating rich local eco-assistant response.")
-            return@withContext getLocalSmartEcoResponse(userPrompt)
+            return@withContext getLocalSmartEcoResponse(userPrompt, cleanUserName)
         }
 
         try {
@@ -59,10 +64,16 @@ Garde tes réponses claires, concises (2 à 4 paragraphes maximum), bien structu
             val contentsArray = JSONArray()
 
             // Include system instruction in contents or prompt context
+            val userContextInstruction = if (cleanUserName.isNotBlank()) {
+                "$SYSTEM_INSTRUCTION\nNote : L'utilisateur avec qui tu échanges s'appelle '$cleanUserName'. Adresse-toi à lui/elle personnellement par son nom."
+            } else {
+                SYSTEM_INSTRUCTION
+            }
+
             val systemContext = JSONObject().apply {
                 put("role", "user")
                 put("parts", JSONArray().apply {
-                    put(JSONObject().put("text", "System Instruction: $SYSTEM_INSTRUCTION"))
+                    put(JSONObject().put("text", "System Instruction: $userContextInstruction"))
                 })
             }
             contentsArray.put(systemContext)
@@ -70,7 +81,7 @@ Garde tes réponses claires, concises (2 à 4 paragraphes maximum), bien structu
             val systemAck = JSONObject().apply {
                 put("role", "model")
                 put("parts", JSONArray().apply {
-                    put(JSONObject().put("text", "Compris ! Je suis AWA, l'Éco-Assistante officielle d'AIL4C à Bouaké. Je suis prête à guider nos membres et bénévoles."))
+                    put(JSONObject().put("text", "Compris ! Je suis AWA, l'Éco-Assistante officielle d'AIL4C. Je m'adresse à ${if (cleanUserName.isNotBlank()) cleanUserName else "mon interlocuteur"} avec bienveillance."))
                 })
             }
             contentsArray.put(systemAck)
@@ -117,7 +128,7 @@ Garde tes réponses claires, concises (2 à 4 paragraphes maximum), bien structu
 
             if (!response.isSuccessful || responseString.isBlank()) {
                 Log.w(TAG, "Gemini API error code: ${response.code}, falling back to local engine.")
-                return@withContext getLocalSmartEcoResponse(userPrompt)
+                return@withContext getLocalSmartEcoResponse(userPrompt, cleanUserName)
             }
 
             val jsonResponse = JSONObject(responseString)
@@ -134,65 +145,66 @@ Garde tes réponses claires, concises (2 à 4 paragraphes maximum), bien structu
                 }
             }
 
-            getLocalSmartEcoResponse(userPrompt)
+            getLocalSmartEcoResponse(userPrompt, cleanUserName)
         } catch (e: Exception) {
             Log.e(TAG, "Error contacting Gemini API: ${e.localizedMessage}", e)
-            getLocalSmartEcoResponse(userPrompt)
+            getLocalSmartEcoResponse(userPrompt, cleanUserName)
         }
     }
 
     /**
-     * Smart local Eco knowledge engine for AIL4C & Bouaké climate actions.
+     * Smart local Eco knowledge engine for AIL4C climate actions, personalized to user name.
      */
-    fun getLocalSmartEcoResponse(prompt: String): String {
+    fun getLocalSmartEcoResponse(prompt: String, userName: String = ""): String {
         val query = prompt.lowercase()
+        val userGreeting = if (userName.isNotBlank()) " $userName" else ""
 
         return when {
             query.contains("bonjour") || query.contains("salut") || query.contains("bienvenue") || query.contains("coucou") || query.contains("aide") -> {
                 """
-🌿 **Bienvenue sur l'application officielle de l'AIL4C !**
+🌿 **Bonjour$userGreeting et bienvenue sur l'application AIL4C !**
 
-Je suis **AWA**, votre Éco-Assistante IA dédiée à la lutte contre le réchauffement climatique et à l'insertion professionnelle des jeunes à **Bouaké**.
+Je suis **AWA**, votre Éco-Assistante IA dédiée à la lutte contre le changement climatique et à l'insertion des jeunes. Notre siège national est à Bouaké, mais nos programmes et cette application sont ouverts à tous sans exception.
 
-Voici ce que je peux faire pour vous :
-• 🌳 **Vous inscrire aux reboisements** & actions citoyennes dans le Gbêkê.
+Voici ce que nous pouvons faire ensemble, $userName :
+• 🌳 **Participer aux reboisements** & actions citoyennes.
 • 🎓 **Découvrir les formations gratuites** (Agro-écologie, Recyclage & Métiers Verts).
 • 💰 **Faire un don solidaire** via Mobile Money (Orange Money, MTN, Wave).
-• 📍 **Localiser le siège** au Quartier Commerce de Bouaké.
+• 📍 **Découvrir nos projets et contacter l'ONG**.
 
-Que souhaitez-vous explorer aujourd'hui ?
+Que souhaitez-vous explorer aujourd'hui$userGreeting ?
                 """.trimIndent()
             }
 
             query.contains("formation") || query.contains("apprendre") || query.contains("métier") || query.contains("cours") -> {
                 """
-🌱 **Formations Gratuites aux Métiers Verts AIL4C**
+🌱 **Formations Gratuites aux Métiers Verts AIL4C**$userGreeting
 
-L'AIL4C forme chaque année des centaines de jeunes à Bouaké :
+L'AIL4C forme chaque année des centaines de jeunes aux opportunités durables :
 1. **Agro-écologie & Maraîchage Durable** : Compostage organique, biopesticides naturels et irrigation économe (Session de 3 mois).
 2. **Recyclage Plastique & Éco-Artisanat** : Transformation des déchets plastiques en pavés écologiques et objets utilitaires.
 3. **Technicien en Énergie Solaire & Pompage Photovoltaïque** : Installation et maintenance de panneaux solaires.
 
-👉 Rendez-vous dans l'onglet **Formations** pour soumettre votre candidature gratuite !
+👉 Rendez-vous dans l'onglet **Formations** pour soumettre votre candidature gratuite, $userName !
                 """.trimIndent()
             }
 
             query.contains("reboisement") || query.contains("arbre") || query.contains("plante") || query.contains("foret") -> {
                 """
-🌳 **Campagne « Bouaké Ville Verte & Durable »**
+🌳 **Campagne Nationale de Reboisement & Préservation**$userGreeting
 
-Notre objectif majeur : **planter plus de 50 000 arbres** pour restaurer le couvert végétal du Gbêkê et lutter contre les îlots de chaleur urbains !
+Notre objectif majeur : **planter plus de 50 000 arbres** pour restaurer le couvert végétal et lutter contre les îlots de chaleur !
 
 • **Essences plantées** : Acacia mangium, Teck, Anacardier, Moringa et arbres fruitiers.
-• **Prochaine action** : Grande journée de reboisement communautaire au quartier Nimbo / Belle-Ville ce samedi à 07h30.
+• **Prochaine action** : Grande journée de reboisement communautaire ce samedi à 07h30.
 
-Rejoignez-nous dans l'onglet **Actions** pour confirmer votre présence !
+Rejoignez-nous dans l'onglet **Actions** pour confirmer votre participation$userGreeting !
                 """.trimIndent()
             }
 
             query.contains("don") || query.contains("financer") || query.contains("contribuer") || query.contains("argent") || query.contains("wave") || query.contains("orange") -> {
                 """
-💚 **Soutenez les Projets Climat d'AIL4C**
+💚 **Soutenez les Projets Climat d'AIL4C**$userGreeting
 
 Chaque contribution permet d'acheter des plants d'arbres, du matériel de salubrité et de financer les kits de formation des jeunes en précarité :
 
@@ -200,15 +212,15 @@ Chaque contribution permet d'acheter des plants d'arbres, du matériel de salubr
 • **MTN Mobile Money** : `+225 05 05 98 76 54`
 • **Moov Money** : `+225 01 01 22 33 44`
 
-Rendez-vous dans la section **Projets** pour soutenir un programme spécifique !
+Merci pour votre générosité, $userName ! Rendez-vous dans la section **Projets** pour soutenir une cause précise.
                 """.trimIndent()
             }
 
             query.contains("contact") || query.contains("adresse") || query.contains("siege") || query.contains("localisation") || query.contains("bouake") || query.contains("où") -> {
                 """
-📍 **Siège de l'ONG AIL4C à Bouaké**
+📍 **Siège National de l'ONG AIL4C**
 
-• **Adresse** : Boulevard de la Fraternité, Quartier Commerce, Face à la Préfecture, Bouaké, Côte d'Ivoire.
+• **Siège National** : Boulevard de la Fraternité, Quartier Commerce, Face à la Préfecture, Bouaké, Côte d'Ivoire (Ouvert à toute la communauté nationale et internationale).
 • **Téléphone** : +225 27 31 63 00 00 / +225 07 07 12 34 56
 • **Email** : contact@ail4c-ci.org / direction@ail4c-ci.org
 • **Horaires** : Du Lundi au Vendredi de 08h00 à 17h30, Samedi de 08h30 à 13h00.
@@ -217,14 +229,14 @@ Rendez-vous dans la section **Projets** pour soutenir un programme spécifique !
 
             query.contains("benevole") || query.contains("volontaire") || query.contains("rejoindre") || query.contains("inscrire") -> {
                 """
-🤝 **Devenez Éco-Bénévole AIL4C !**
+🤝 **Devenez Éco-Bénévole AIL4C$userGreeting !**
 
-En devenant bénévole, vous gagnez des **Points Éco-Citoyens**, obtenez des attestations d'engagement et participez directement à l'assainissement et au verdissement de Bouaké !
+En devenant bénévole, vous gagnez des **Points Éco-Citoyens**, obtenez des attestations d'engagement et participez directement à l'assainissement et au reboisement durable !
 
 Pour vous inscrire :
-1. Créez votre compte dans l'interface de connexion avec votre numéro ou email.
+1. Créez ou connectez votre compte éco-citoyen avec votre nom et numéro.
 2. Choisissez une action dans l'onglet **Actions**.
-3. Recevez votre badge de bénévole officiel !
+3. Recevez votre badge officiel !
                 """.trimIndent()
             }
 
@@ -232,9 +244,9 @@ Pour vous inscrire :
                 """
 🌿 **Réponse de l'Assistante AWA - AIL4C**
 
-Merci pour votre message ! En tant qu'Éco-Assistante de l'AIL4C, je suis engagée pour faire de Bouaké un pôle d'excellence écologique et d'emploi vert pour la jeunesse.
+Merci pour votre message$userGreeting ! En tant qu'Éco-Assistante de l'AIL4C, je suis engagée pour promouvoir la transition écologique et l'emploi vert pour tous.
 
-Que voulez-vous savoir en détail ?
+Que voulez-vous savoir en détail$userGreeting ?
 • 🌳 Nos campagnes de reboisement et pépinières
 • 🎓 Les candidatures aux formations agro-écologiques
 • 🤝 L'inscription comme éco-volontaire

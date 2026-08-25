@@ -116,13 +116,21 @@ class AilRepository(private val dao: AilDao) {
         )
         dao.insertAiMessage(userMsg)
 
+        // Get current user's name if logged in
+        val currentUser = dao.getCurrentUser()
+        val userName = currentUser?.fullName ?: ""
+
         // Get past messages for context
         val recentHistory = dao.getAllAiMessages().firstOrNull()?.takeLast(6)?.map {
             it.messageText to it.isFromUser
         } ?: emptyList()
 
-        // Call Gemini / smart local assistant
-        val aiResponseText = GeminiService.generateAiResponse(userPrompt, recentHistory)
+        // Call Gemini / smart local assistant personalized with user name
+        val aiResponseText = GeminiService.generateAiResponse(
+            userPrompt = userPrompt,
+            userName = userName,
+            recentHistory = recentHistory
+        )
 
         // Save AI response to database
         val aiMsg = AiChatMessageEntity(
@@ -138,9 +146,11 @@ class AilRepository(private val dao: AilDao) {
     suspend fun clearAiChatHistory() {
         dao.clearAiMessages()
         // Re-insert initial welcome message
+        val currentUser = dao.getCurrentUser()
+        val nameGreeting = if (!currentUser?.fullName.isNullOrBlank()) " ${currentUser?.fullName}" else ""
         dao.insertAiMessage(
             AiChatMessageEntity(
-                messageText = "🌿 Bonjour et chaleureuse bienvenue sur l'application de l'ONG AIL4C ! Je suis AWA, votre Éco-Assistante IA dédiée à la lutte contre le réchauffement climatique et l'insertion des jeunes à Bouaké. Comment puis-je vous accompagner aujourd'hui ?",
+                messageText = "🌿 Bonjour$nameGreeting et bienvenue sur l'application de l'ONG AIL4C ! Je suis AWA, votre Éco-Assistante IA dédiée à la lutte contre le réchauffement climatique et l'insertion des jeunes. Comment puis-je vous accompagner aujourd'hui ?",
                 isFromUser = false,
                 timestamp = System.currentTimeMillis()
             )
@@ -618,16 +628,16 @@ class AilRepository(private val dao: AilDao) {
                 OrgInfoEntity("org_acronym", "AIL4C"),
                 OrgInfoEntity("org_president", "Aka Koffi Ezéchiel"),
                 OrgInfoEntity("org_motto", "Agir pour le Climat, Former la Jeunesse, Bâtir l'Avenir"),
-                OrgInfoEntity("org_headquarters", "Bouaké, Région du Gbêkê, Côte d'Ivoire"),
-                OrgInfoEntity("org_address", "Bouaké - Quartier Tchelekro / Koko / Commerce"),
+                OrgInfoEntity("org_headquarters", "Bouaké, Région du Gbêkê, Côte d'Ivoire (Siège National)"),
+                OrgInfoEntity("org_address", "Siège National : Bouaké - Quartier Tchelekro / Koko / Commerce"),
                 OrgInfoEntity("org_phone_1", "+225 07 89 71 02 89"),
                 OrgInfoEntity("org_phone_2", "+225 07 89 97 63 23"),
                 OrgInfoEntity("org_email", "ongail4c@gmail.com"),
                 OrgInfoEntity("org_facebook_url", "https://www.facebook.com/share/1GvChYFAMY/"),
                 OrgInfoEntity("org_facebook_page_name", "ONG AIL4C (Page Officielle)"),
                 OrgInfoEntity("admin_pin", "1975"),
-                OrgInfoEntity("org_mission", "Mobiliser les populations de Bouaké et de Côte d'Ivoire contre les effets néfastes du changement climatique, lutter contre les violences basées sur le genre (VBG) et créer des perspectives concrètes d'emploi et de formation aux métiers verts pour la jeunesse."),
-                OrgInfoEntity("org_vision", "Un Bouaké durable, vert et propre où chaque citoyen adopte des réflexes écologiques et où la jeunesse trouve dans la transition écologique un vecteur d'émancipation.")
+                OrgInfoEntity("org_mission", "Mobiliser toutes les populations contre les effets néfastes du changement climatique, lutter contre les violences basées sur le genre (VBG) et créer des perspectives concrètes d'emploi et de formation aux métiers verts pour toute la jeunesse sans exception."),
+                OrgInfoEntity("org_vision", "Un environnement durable, vert et propre où chaque citoyen adopte des réflexes écologiques et où la jeunesse trouve dans la transition écologique un vecteur d'émancipation.")
             )
         )
 
@@ -636,7 +646,7 @@ class AilRepository(private val dao: AilDao) {
         if (existingAiMsgs.isNullOrEmpty()) {
             dao.insertAiMessage(
                 AiChatMessageEntity(
-                    messageText = "🌿 Bonjour et bienvenue sur l'application officielle de l'AIL4C ! Je suis AWA, votre Éco-Assistante IA dédiée à la lutte contre le réchauffement climatique et l'insertion des jeunes à Bouaké. Comment puis-je vous accompagner aujourd'hui ?",
+                    messageText = "🌿 Bonjour et bienvenue sur l'application officielle de l'AIL4C ! Je suis AWA, votre Éco-Assistante IA dédiée à la lutte contre le réchauffement climatique et l'insertion des jeunes. Comment puis-je vous accompagner aujourd'hui ?",
                     isFromUser = false,
                     timestamp = System.currentTimeMillis()
                 )
@@ -649,11 +659,11 @@ class AilRepository(private val dao: AilDao) {
             dao.saveUserProfile(
                 UserProfileEntity(
                     id = "current_user",
-                    fullName = "Éco-Citoyen Bouaké",
+                    fullName = "Éco-Citoyen",
                     identifier = "+225 07 00 00 00",
                     authType = "PHONE",
                     phoneNumber = "+225 07 00 00 00",
-                    email = "citoyen.bouake@ail4c-ci.org",
+                    email = "citoyen@ail4c-ci.org",
                     city = "Bouaké",
                     quartier = "Commerce",
                     ecoPoints = 75,
@@ -677,7 +687,11 @@ class AilRepository(private val dao: AilDao) {
                 INSTANCE = repo
                 // Trigger background seed
                 CoroutineScope(Dispatchers.IO).launch {
-                    repo.ensureDefaultDataSeeded()
+                    try {
+                        repo.ensureDefaultDataSeeded()
+                    } catch (e: Exception) {
+                        android.util.Log.e("AilRepository", "Error seeding database: ${e.localizedMessage}", e)
+                    }
                 }
                 repo
             }

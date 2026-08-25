@@ -41,6 +41,12 @@ class AilAppRobolectricTest {
     }
 
     @Test
+    fun testMainActivityLaunch() {
+        val controller = org.robolectric.Robolectric.buildActivity(MainActivity::class.java).setup()
+        assertNotNull(controller.get())
+    }
+
+    @Test
     fun testInsertAndRetrieveNews() = runBlocking {
         val dao = database.ailDao()
         val news = NewsArticleEntity(

@@ -156,7 +156,7 @@ fun ActionsScreen(
             ModernSearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                placeholder = "Rechercher une action, un quartier de Bouaké..."
+                placeholder = "Rechercher une action, une ville, un quartier..."
             )
         }
 

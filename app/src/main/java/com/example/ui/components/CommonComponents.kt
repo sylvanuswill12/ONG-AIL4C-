@@ -497,7 +497,7 @@ fun WeeklyStreakWidget(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Semaine en cours • Bouaké Vert",
+                            text = "Semaine en cours • Éco-Engagement",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

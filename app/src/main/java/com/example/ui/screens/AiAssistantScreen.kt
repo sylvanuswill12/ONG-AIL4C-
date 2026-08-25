@@ -115,7 +115,7 @@ fun AiAssistantScreen(
         "🌿 Qui est l'ONG AIL4C ?",
         "🌳 Participer au reboisement",
         "🎓 Formations gratuites métiers verts",
-        "📍 Adresse du siège à Bouaké",
+        "📍 Adresse du siège de l'ONG",
         "💚 Comment faire un don Mobile Money ?",
         "🤝 Devenir bénévole éco-citoyen"
     )
@@ -170,7 +170,7 @@ fun AiAssistantScreen(
                                 }
                             }
                             Text(
-                                text = if (isThinking) "En train de vous répondre..." else "En ligne • Bouaké, Côte d'Ivoire",
+                                text = if (isThinking) "En train de vous répondre..." else "En ligne • Côte d'Ivoire",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (isThinking) AilEmeraldDark else Color.Gray,
                                 fontSize = 11.sp
@@ -402,7 +402,7 @@ fun WelcomeAiHeaderCard(
                         color = Color.Black
                     )
                     Text(
-                        text = "Votre guide intelligent pour l'environnement & la jeunesse à Bouaké",
+                        text = "Votre guide intelligent pour le climat, l'écologie & la jeunesse",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
@@ -421,8 +421,8 @@ fun WelcomeAiHeaderCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "• « Explique-moi les bienfaits de l'agro-écologie à Bouaké »\n" +
-                        "• « Comment puis-je m'inscrire au prochain reboisement ? »\n" +
+                text = "• « Explique-moi les bienfaits de l'agro-écologie »\n" +
+                        "• « Comment puis-ci m'inscrire au prochain reboisement ? »\n" +
                         "• « Quelles formations de recyclage plastique sont disponibles ? »\n" +
                         "• « Quels sont les numéros pour faire un don Wave ou Orange ? »",
                 style = MaterialTheme.typography.bodySmall,
