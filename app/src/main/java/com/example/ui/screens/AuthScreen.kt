@@ -1,0 +1,684 @@
+package com.example.ui.screens
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.ui.theme.AilEmerald
+import com.example.ui.theme.AilEmeraldDark
+import com.example.ui.theme.AilEmeraldLight
+import com.example.ui.theme.AilLeafGreen
+import com.example.ui.theme.AilMintBackground
+import com.example.ui.viewmodel.AilViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AuthScreen(
+    viewModel: AilViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selectedTabIndex by remember { mutableIntStateOf(0) } // 0 = Phone, 1 = Email
+    var isRegisterMode by remember { mutableStateOf(false) }
+
+    // Form inputs
+    var phoneNumber by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var fullName by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("Bouaké") }
+    var quartier by remember { mutableStateOf("Commerce") }
+    var isOtpSent by remember { mutableStateOf(false) }
+    var otpCode by remember { mutableStateOf("") }
+
+    val scrollState = rememberScrollState()
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = AilMintBackground,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = if (isRegisterMode) "Créer un compte Éco-Citoyen" else "Espace Connexion",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.testTag("auth_back_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Retour",
+                            tint = Color.Black
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header Logo & Mission
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(AilEmerald, AilLeafGreen)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = "AIL4C Logo",
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "ONG AIL4C Bouaké",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = AilEmeraldDark
+            )
+
+            Text(
+                text = "Rejoignez le réseau des jeunes engagés pour le climat et l'emploi vert",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                modifier = Modifier.padding(horizontal = 20.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Main Auth Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    // Mode Tabs (Phone vs Email)
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        containerColor = AilMintBackground,
+                        contentColor = AilEmerald,
+                        indicator = { tabPositions ->
+                            TabRowDefaults.SecondaryIndicator(
+                                Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                                color = AilEmerald,
+                                height = 3.dp
+                            )
+                        },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                    ) {
+                        Tab(
+                            selected = selectedTabIndex == 0,
+                            onClick = { selectedTabIndex = 0 },
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Phone,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (selectedTabIndex == 0) AilEmerald else Color.Gray
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Numéro 🇨🇮",
+                                        fontWeight = if (selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selectedTabIndex == 0) AilEmerald else Color.Gray
+                                    )
+                                }
+                            }
+                        )
+
+                        Tab(
+                            selected = selectedTabIndex == 1,
+                            onClick = { selectedTabIndex = 1 },
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Email,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (selectedTabIndex == 1) AilEmerald else Color.Gray
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Email ✉️",
+                                        fontWeight = if (selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selectedTabIndex == 1) AilEmerald else Color.Gray
+                                    )
+                                }
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Registration extra fields
+                    AnimatedVisibility(visible = isRegisterMode) {
+                        Column {
+                            OutlinedTextField(
+                                value = fullName,
+                                onValueChange = { fullName = it },
+                                label = { Text("Nom et Prénoms") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = AilEmerald)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("auth_name_input"),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AilEmerald,
+                                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                                ),
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedTextField(
+                                    value = city,
+                                    onValueChange = { city = it },
+                                    label = { Text("Ville") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.LocationCity, contentDescription = null, tint = AilEmerald)
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("auth_city_input"),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AilEmerald,
+                                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                                    ),
+                                    singleLine = true
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                OutlinedTextField(
+                                    value = quartier,
+                                    onValueChange = { quartier = it },
+                                    label = { Text("Quartier") },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("auth_quartier_input"),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AilEmerald,
+                                        unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                                    ),
+                                    singleLine = true
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
+
+                    // Tab 0: Phone Number Connection
+                    if (selectedTabIndex == 0) {
+                        OutlinedTextField(
+                            value = phoneNumber,
+                            onValueChange = { phoneNumber = it },
+                            label = { Text("Numéro de téléphone ivoirien") },
+                            placeholder = { Text("Ex: 07 89 71 02 89") },
+                            leadingIcon = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(start = 8.dp, end = 4.dp)
+                                ) {
+                                    Text(
+                                        text = "+225",
+                                        fontWeight = FontWeight.Bold,
+                                        color = AilEmeraldDark,
+                                        fontSize = 13.sp
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .width(1.dp)
+                                            .height(20.dp)
+                                            .background(Color.LightGray)
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("auth_phone_input"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AilEmerald,
+                                unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            singleLine = true
+                        )
+
+                        if (isOtpSent) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = otpCode,
+                                onValueChange = { otpCode = it },
+                                label = { Text("Code de confirmation reçu par SMS") },
+                                placeholder = { Text("Ex: 123456") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Key, contentDescription = null, tint = AilEmerald)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("auth_otp_input"),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AilEmerald,
+                                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                                ),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Button(
+                            onClick = {
+                                if (phoneNumber.isBlank()) {
+                                    viewModel.showToast("Veuillez saisir votre numéro de téléphone")
+                                } else {
+                                    viewModel.loginWithPhone(
+                                        phoneNumber = phoneNumber,
+                                        fullName = fullName.ifBlank { "Éco-Volontaire (+225 $phoneNumber)" },
+                                        city = city,
+                                        quartier = quartier
+                                    )
+                                    onBack()
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .testTag("auth_submit_phone_button"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AilEmerald)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isRegisterMode) "Créer mon profil bénévole" else "Se connecter par SMS / Téléphone",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+                    // Tab 1: Email & Password Connection
+                    if (selectedTabIndex == 1) {
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Adresse Email") },
+                            placeholder = { Text("Ex: membre@ail4c-ci.org") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Email, contentDescription = null, tint = AilEmerald)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("auth_email_input"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AilEmerald,
+                                unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Quick suggestion for admins
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Comptes Admin :",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray,
+                                fontSize = 10.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                onClick = { email = "atchouyaosylvain59@gmail.com" },
+                                shape = RoundedCornerShape(8.dp),
+                                color = AilMintBackground
+                            ) {
+                                Text(
+                                    text = "atchouyaosylvain59@...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AilEmeraldDark,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Surface(
+                                onClick = { email = "ail4c03@gmail.com" },
+                                shape = RoundedCornerShape(8.dp),
+                                color = AilMintBackground
+                            ) {
+                                Text(
+                                    text = "ail4c03@...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AilEmeraldDark,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Mot de passe") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Key, contentDescription = null, tint = AilEmerald)
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        contentDescription = "Afficher mot de passe",
+                                        tint = Color.Gray
+                                    )
+                                }
+                            },
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("auth_password_input"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AilEmerald,
+                                unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Button(
+                            onClick = {
+                                if (email.isBlank() || !email.contains("@")) {
+                                    viewModel.showToast("Veuillez saisir une adresse email valide")
+                                } else {
+                                    viewModel.loginWithEmail(
+                                        email = email,
+                                        fullName = fullName.ifBlank { email.substringBefore("@") },
+                                        city = city,
+                                        quartier = quartier
+                                    )
+                                    onBack()
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .testTag("auth_submit_email_button"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AilEmerald)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isRegisterMode) "Créer mon compte Email" else "Se connecter par Email",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Toggle Register vs Login
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isRegisterMode) "Vous avez déjà un compte ?" else "Nouveau sur AIL4C ?",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.DarkGray
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isRegisterMode) "Se connecter" else "S'inscrire gratuitement",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = AilEmeraldDark,
+                            modifier = Modifier
+                                .clickable { isRegisterMode = !isRegisterMode }
+                                .padding(4.dp)
+                                .testTag("toggle_register_mode_button")
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Quick Demo & Guest options
+            Text(
+                text = "OU",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Fast Demo Login Button
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        viewModel.loginWithPhone(
+                            phoneNumber = "07 89 71 02 89",
+                            fullName = "Aka Ezéchiel (Membre Actif)",
+                            city = "Bouaké",
+                            quartier = "Tchelekro"
+                        )
+                        onBack()
+                    }
+                    .testTag("auth_demo_login_button"),
+                shape = RoundedCornerShape(16.dp),
+                color = AilEmeraldLight,
+                border = androidx.compose.foundation.BorderStroke(1.dp, AilEmerald.copy(alpha = 0.4f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(AilEmerald),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CloudDone,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Connexion Rapide Démo • Bénévole Bouaké",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AilEmeraldDark
+                        )
+                        Text(
+                            text = "Accéder directement avec le profil pré-rempli",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.DarkGray,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Guest Mode
+            OutlinedButton(
+                onClick = {
+                    viewModel.loginAsGuest()
+                    onBack()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("auth_guest_button"),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.DarkGray
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+            ) {
+                Text(
+                    text = "Continuer en mode Invité / Découverte",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Security badge
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudDone,
+                    contentDescription = null,
+                    tint = AilEmerald,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Données sécurisées avec Firebase & Base de données Locale",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray,
+                    fontSize = 11.sp
+                )
+            }
+        }
+    }
+}
