@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MilitaryTech
@@ -480,6 +481,15 @@ fun ProfileScreen(
                         title = "Mes Candidatures Formations",
                         subtitle = "Agro-écologie, Métiers Verts & Recyclage",
                         onClick = { viewModel.navigateTo(AppScreen.TRAININGS) }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray.copy(alpha = 0.3f))
+
+                    ProfileQuickActionRow(
+                        icon = Icons.Default.Info,
+                        title = "À Propos de l'ONG AIL4C",
+                        subtitle = "Histoire, gouvernance, mission, vision & contacts",
+                        onClick = { viewModel.navigateTo(AppScreen.ABOUT) }
                     )
                 }
             }

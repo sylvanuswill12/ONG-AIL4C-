@@ -5,11 +5,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,14 +30,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -50,6 +60,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +70,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.AdminLoginDialog
 import com.example.ui.components.ResolveImage
+import com.example.ui.components.WebAccessDialog
+import com.example.ui.screens.AboutScreen
 import com.example.ui.screens.ActionsScreen
 import com.example.ui.screens.AdminScreen
 import com.example.ui.screens.AiAssistantScreen
@@ -68,9 +82,13 @@ import com.example.ui.screens.NewsScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.ProjectsScreen
 import com.example.ui.screens.TrainingsScreen
+import com.example.ui.screens.WebPortalScreen
 import com.example.ui.theme.AilEmerald
+import com.example.ui.theme.AilEmeraldDark
+import com.example.ui.theme.AilEmeraldLight
 import com.example.ui.theme.AilForestDark
 import com.example.ui.theme.AilForestGreen
+import com.example.ui.theme.AilGold
 import com.example.ui.theme.AilMint
 import com.example.ui.theme.AilMintDarkGreen
 import com.example.ui.theme.AilMintLight
@@ -103,9 +121,11 @@ fun AilAppMain(viewModel: AilViewModel) {
     val isUserAdminAuthorized by viewModel.isUserAdminAuthorized.collectAsStateWithLifecycle()
     val isAuthDialogOpen by viewModel.isAuthDialogOpen.collectAsStateWithLifecycle()
     val userProfile by viewModel.currentUserProfile.collectAsStateWithLifecycle()
+    val syncStatus by viewModel.cloudSyncStatus.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAdminPinDialog by remember { mutableStateOf(false) }
+    var showWebAccessDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.toastMessage.collectLatest { message ->
@@ -119,6 +139,10 @@ fun AilAppMain(viewModel: AilViewModel) {
             viewModel.navigateTo(AppScreen.HOME)
             viewModel.showToast("Accès réservé aux administrateurs autorisés (atchouyaosylvain59@gmail.com, ail4c03@gmail.com).")
         }
+    }
+
+    if (showWebAccessDialog) {
+        WebAccessDialog(onDismiss = { showWebAccessDialog = false })
     }
 
     if (showAdminPinDialog) {
@@ -179,6 +203,54 @@ fun AilAppMain(viewModel: AilViewModel) {
                     }
                 },
                 actions = {
+                    // Web Portal & Browser Access shortcut
+                    Surface(
+                        onClick = { showWebAccessDialog = true },
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .testTag("topbar_web_access_btn")
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Public,
+                                contentDescription = "Accès Web 24h/24",
+                                tint = AilEmeraldDark,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    // Cloud Sync status & instant refresh
+                    Surface(
+                        onClick = { viewModel.triggerManualCloudSync() },
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .testTag("topbar_cloud_sync_btn")
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Sync,
+                                contentDescription = "Synchroniser en direct",
+                                tint = if (syncStatus.isSyncing) AilGold else if (syncStatus.isOnline) AilEmerald else Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
                     // AI Assistant quick shortcut
                     Surface(
                         onClick = { viewModel.navigateTo(AppScreen.AI_ASSISTANT) },
@@ -198,6 +270,30 @@ fun AilAppMain(viewModel: AilViewModel) {
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = "IA AWA",
                                 tint = if (currentScreen == AppScreen.AI_ASSISTANT) Color.White else AilEmerald,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    // À Propos quick shortcut
+                    Surface(
+                        onClick = { viewModel.navigateTo(AppScreen.ABOUT) },
+                        shape = CircleShape,
+                        color = if (currentScreen == AppScreen.ABOUT) AilEmerald else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .testTag("topbar_about_btn")
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .padding(8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "À Propos",
+                                tint = if (currentScreen == AppScreen.ABOUT) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -282,7 +378,7 @@ fun AilAppMain(viewModel: AilViewModel) {
                         selected = currentScreen == AppScreen.HOME,
                         onClick = { viewModel.navigateTo(AppScreen.HOME) },
                         icon = { Icon(Icons.Default.Home, contentDescription = "Accueil") },
-                        label = { Text("Accueil", fontSize = 10.sp, fontWeight = if (currentScreen == AppScreen.HOME) FontWeight.Bold else FontWeight.Medium) },
+                        label = { Text("Accueil", fontSize = 11.sp, fontWeight = if (currentScreen == AppScreen.HOME) FontWeight.Bold else FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = AilEmerald,
                             selectedTextColor = AilEmerald,
@@ -295,8 +391,8 @@ fun AilAppMain(viewModel: AilViewModel) {
                     NavigationBarItem(
                         selected = currentScreen == AppScreen.ACTIONS,
                         onClick = { viewModel.navigateTo(AppScreen.ACTIONS) },
-                        icon = { Icon(Icons.Default.Eco, contentDescription = "Actions") },
-                        label = { Text("Actions", fontSize = 10.sp, fontWeight = if (currentScreen == AppScreen.ACTIONS) FontWeight.Bold else FontWeight.Medium) },
+                        icon = { Icon(Icons.Default.Eco, contentDescription = "Action") },
+                        label = { Text("Action", fontSize = 11.sp, fontWeight = if (currentScreen == AppScreen.ACTIONS) FontWeight.Bold else FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = AilEmerald,
                             selectedTextColor = AilEmerald,
@@ -307,38 +403,10 @@ fun AilAppMain(viewModel: AilViewModel) {
                     )
 
                     NavigationBarItem(
-                        selected = currentScreen == AppScreen.PROJECTS,
-                        onClick = { viewModel.navigateTo(AppScreen.PROJECTS) },
-                        icon = { Icon(Icons.Default.Handshake, contentDescription = "Projets") },
-                        label = { Text("Projets", fontSize = 10.sp, fontWeight = if (currentScreen == AppScreen.PROJECTS) FontWeight.Bold else FontWeight.Medium) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = AilEmerald,
-                            selectedTextColor = AilEmerald,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            indicatorColor = AilMintPillBg
-                        )
-                    )
-
-                    NavigationBarItem(
-                        selected = currentScreen == AppScreen.TRAININGS,
-                        onClick = { viewModel.navigateTo(AppScreen.TRAININGS) },
-                        icon = { Icon(Icons.Default.School, contentDescription = "Formations") },
-                        label = { Text("Formations", fontSize = 10.sp, fontWeight = if (currentScreen == AppScreen.TRAININGS) FontWeight.Bold else FontWeight.Medium) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = AilEmerald,
-                            selectedTextColor = AilEmerald,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            indicatorColor = AilMintPillBg
-                        )
-                    )
-
-                    NavigationBarItem(
-                        selected = currentScreen == AppScreen.AI_ASSISTANT,
-                        onClick = { viewModel.navigateTo(AppScreen.AI_ASSISTANT) },
-                        icon = { Icon(Icons.Default.AutoAwesome, contentDescription = "IA AWA") },
-                        label = { Text("IA AWA", fontSize = 10.sp, fontWeight = if (currentScreen == AppScreen.AI_ASSISTANT) FontWeight.Bold else FontWeight.Medium) },
+                        selected = currentScreen == AppScreen.NEWS,
+                        onClick = { viewModel.navigateTo(AppScreen.NEWS) },
+                        icon = { Icon(Icons.Default.Newspaper, contentDescription = "Actualités") },
+                        label = { Text("Actualités", fontSize = 11.sp, fontWeight = if (currentScreen == AppScreen.NEWS) FontWeight.Bold else FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = AilEmerald,
                             selectedTextColor = AilEmerald,
@@ -358,7 +426,7 @@ fun AilAppMain(viewModel: AilViewModel) {
                             }
                         },
                         icon = { Icon(Icons.Default.Person, contentDescription = "Profil") },
-                        label = { Text("Profil", fontSize = 10.sp, fontWeight = if (currentScreen == AppScreen.PROFILE) FontWeight.Bold else FontWeight.Medium) },
+                        label = { Text("Profil", fontSize = 11.sp, fontWeight = if (currentScreen == AppScreen.PROFILE) FontWeight.Bold else FontWeight.Medium) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = AilEmerald,
                             selectedTextColor = AilEmerald,
@@ -371,12 +439,48 @@ fun AilAppMain(viewModel: AilViewModel) {
             }
         }
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when (currentScreen) {
+            // Offline / Sync Notification Bar if disconnected
+            AnimatedVisibility(visible = !syncStatus.isOnline) {
+                Surface(
+                    color = Color(0xFFC0392B),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.WifiOff,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Mode hors ligne • Connexion Internet requise pour le fonctionnement 24h/24 et la synchronisation en direct.",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            lineHeight = 14.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                when (currentScreen) {
                 AppScreen.HOME -> HomeScreen(viewModel = viewModel)
                 AppScreen.ACTIONS -> ActionsScreen(viewModel = viewModel)
                 AppScreen.PROJECTS -> ProjectsScreen(viewModel = viewModel)
@@ -384,9 +488,63 @@ fun AilAppMain(viewModel: AilViewModel) {
                 AppScreen.NEWS -> NewsScreen(viewModel = viewModel)
                 AppScreen.MEDIA -> MediaScreen(viewModel = viewModel)
                 AppScreen.AI_ASSISTANT -> AiAssistantScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
+                AppScreen.ABOUT -> AboutScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
                 AppScreen.PROFILE -> ProfileScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
                 AppScreen.ADMIN -> AdminScreen(viewModel = viewModel)
+                AppScreen.WEB_PORTAL -> WebPortalScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
+            }
+
+            // Bouton rond flottant IA Awa positionné juste en haut de l'onglet Profil (en bas à droite)
+            if (currentScreen != AppScreen.AI_ASSISTANT) {
+                Surface(
+                    onClick = { viewModel.navigateTo(AppScreen.AI_ASSISTANT) },
+                    shape = CircleShape,
+                    color = Color.Transparent,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 14.dp)
+                        .size(56.dp)
+                        .border(
+                            width = 2.dp,
+                            brush = Brush.linearGradient(
+                                listOf(Color.White.copy(alpha = 0.9f), AilMintLight)
+                            ),
+                            shape = CircleShape
+                        )
+                        .testTag("floating_awa_ai_btn")
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.linearGradient(
+                                    listOf(AilEmerald, AilForestDark)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "IA AWA - Conseillère Climat & Écologie",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Text(
+                                text = "AWA",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
+                }
             }
         }
     }
+}
 }

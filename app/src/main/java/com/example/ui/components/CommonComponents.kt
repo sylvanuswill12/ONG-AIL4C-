@@ -1417,7 +1417,7 @@ fun AdminLoginDialog(
                 )
 
                 Text(
-                    text = "Entrez le code d'accès de l'ONG (Défaut : 1975)",
+                    text = "Entrez le mot de passe de gestion administrateur de l'ONG",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -1427,7 +1427,8 @@ fun AdminLoginDialog(
                 OutlinedTextField(
                     value = pin,
                     onValueChange = { pin = it },
-                    label = { Text("Code PIN Admin") },
+                    label = { Text("Mot de passe Admin") },
+                    placeholder = { Text("Ex: AIL4CCI") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,

@@ -37,8 +37,10 @@ enum class AppScreen {
     NEWS,
     MEDIA,
     AI_ASSISTANT,
+    ABOUT,
     PROFILE,
-    ADMIN
+    ADMIN,
+    WEB_PORTAL
 }
 
 class AilViewModel(application: Application) : AndroidViewModel(application) {
@@ -137,6 +139,24 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
 
     val orgInfoList: StateFlow<List<OrgInfoEntity>> = repository.allOrgInfo
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val orgInfoMap: StateFlow<Map<String, String>> = repository.allOrgInfo
+        .map { list -> list.associate { it.key to it.value } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    // Live Cloud Sync State
+    val cloudSyncStatus: StateFlow<com.example.data.remote.CloudSyncStatus> = repository.cloudSyncStatus
+        ?: MutableStateFlow(com.example.data.remote.CloudSyncStatus()).asStateFlow()
+
+    fun triggerManualCloudSync() {
+        repository.triggerCloudSync { success ->
+            if (success) {
+                showToast("✅ Données synchronisées avec succès en temps réel !")
+            } else {
+                showToast("⚠️ Impossible de synchroniser. Vérifiez votre connexion Internet.")
+            }
+        }
+    }
 
     fun navigateTo(screen: AppScreen) {
         _currentScreen.value = screen
@@ -253,16 +273,17 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
         val isAuthorized = emailOrId in ADMIN_AUTHORIZED_EMAILS
 
         if (!isAuthorized) {
-            showToast("Accès restreint : Seuls les comptes atchouyaosylvain59@gmail.com et ail4c03@gmail.com peuvent modifier l'application.")
+            showToast("Accès restreint : Seuls les comptes administrateurs autorisés peuvent modifier l'application.")
             return false
         }
 
-        val isValid = pin.trim() == "1975" || pin.trim() == "admin" || pin.trim() == "admin2024" || pin.trim() == "2026"
+        val trimmedPin = pin.trim()
+        val isValid = trimmedPin.equals("AIL4CCI", ignoreCase = true) || trimmedPin == "1975" || trimmedPin == "admin"
         if (isValid) {
             _isAdminLoggedIn.value = true
             showToast("Accès administrateur validé avec succès !")
         } else {
-            showToast("Code PIN administrateur incorrect (Défaut : 1975)")
+            showToast("Mot de passe administrateur incorrect.")
         }
         return isValid
     }
@@ -477,10 +498,26 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateOrgInfoBatch(infoMap: Map<String, String>, onSaved: () -> Unit = {}) {
+        viewModelScope.launch {
+            val entities = infoMap.map { (k, v) -> OrgInfoEntity(k, v) }
+            repository.setAllOrgInfo(entities)
+            showToast("Toutes les informations institutionnelles ont été mises à jour avec succès !")
+            onSaved()
+        }
+    }
+
+    fun clearAllSampleContent() {
+        viewModelScope.launch {
+            repository.clearAllContent()
+            showToast("Tous les éléments ont été vidés avec succès. Vous pouvez ajouter votre contenu original !")
+        }
+    }
+
     fun syncOfficialFacebookData() {
         viewModelScope.launch {
             repository.resetAndSyncOfficialFacebookData()
-            showToast("Données officielles Facebook & AIL4C synchronisées avec succès !")
+            showToast("Données officielles synchronisées avec succès !")
         }
     }
 

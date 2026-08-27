@@ -31,12 +31,15 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -58,6 +61,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,6 +92,7 @@ import com.example.ui.components.AdminLoginDialog
 import com.example.ui.components.EcoCategoryBadge
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.AilEmerald
+import com.example.ui.theme.AilEmeraldDark
 import com.example.ui.theme.AilForestDark
 import com.example.ui.theme.AilForestGreen
 import com.example.ui.theme.AilGold
@@ -98,6 +103,7 @@ import com.example.ui.theme.AilSoftYellow
 import com.example.ui.theme.AilTagTraining
 import com.example.ui.theme.AilTerracotta
 import com.example.ui.viewmodel.AilViewModel
+import com.example.ui.viewmodel.AppScreen
 
 enum class AdminTab {
     NEWS,
@@ -127,6 +133,7 @@ fun AdminScreen(
     val volunteers by viewModel.volunteerRegistrations.collectAsStateWithLifecycle()
     val applications by viewModel.trainingApplications.collectAsStateWithLifecycle()
     val impactMetrics by viewModel.impactMetrics.collectAsStateWithLifecycle()
+    val syncStatus by viewModel.cloudSyncStatus.collectAsStateWithLifecycle()
 
     var selectedTab by remember { mutableStateOf(AdminTab.NEWS) }
 
@@ -317,7 +324,8 @@ fun AdminScreen(
                     OutlinedTextField(
                         value = pinInput,
                         onValueChange = { pinInput = it },
-                        label = { Text("Code PIN Admin (Défaut : 1975)") },
+                        label = { Text("Mot de passe Administrateur") },
+                        placeholder = { Text("Entrez AIL4CCI") },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
@@ -563,6 +571,65 @@ fun AdminScreen(
                                 contentDescription = "Déconnexion",
                                 tint = AilMintLight
                             )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Cloud Real-Time Sync Status Bar
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.12f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .background(
+                                            if (syncStatus.isOnline) Color(0xFF2ECC71) else Color(0xFFE74C3C),
+                                            CircleShape
+                                        )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = if (syncStatus.isSyncing) "Synchronisation en cours..." else syncStatus.syncMessage,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = syncStatus.lastSyncFormatted,
+                                        fontSize = 10.sp,
+                                        color = AilMintLight
+                                    )
+                                }
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.triggerManualCloudSync() },
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .testTag("admin_manual_cloud_sync_btn")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Sync,
+                                    contentDescription = "Actualiser / Forcer synchronisation Cloud",
+                                    tint = if (syncStatus.isSyncing) AilGold else Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
 
@@ -1930,62 +1997,115 @@ fun AdminMetricEditDialog(
 // Institutional Information Admin Tab
 @Composable
 fun AdminOrgInfoTab(viewModel: AilViewModel) {
-    var headquarters by remember { mutableStateOf("Bouaké, Quartier Commerce & Koko, Région du Gbêkê, Côte d'Ivoire") }
-    var phone1 by remember { mutableStateOf("+225 07 89 71 02 89") }
-    var phone2 by remember { mutableStateOf("+225 07 89 97 63 23") }
-    var email by remember { mutableStateOf("ail4c.ong@gmail.com") }
-    var motto by remember { mutableStateOf("Agir pour le Climat, Former & Insérer la Jeunesse Ivoirienne") }
+    val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
+
+    var orgName by remember { mutableStateOf("") }
+    var orgAcronym by remember { mutableStateOf("") }
+    var president by remember { mutableStateOf("") }
+    var founder by remember { mutableStateOf("") }
+    var motto by remember { mutableStateOf("") }
+    var history by remember { mutableStateOf("") }
+    var mission by remember { mutableStateOf("") }
+    var vision by remember { mutableStateOf("") }
+    var objectives by remember { mutableStateOf("") }
+    var headquarters by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    var phone1 by remember { mutableStateOf("") }
+    var phone2 by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var websiteUrl by remember { mutableStateOf("") }
+    var websiteDomain by remember { mutableStateOf("") }
+    var facebookPageName by remember { mutableStateOf("") }
+    var facebookUrl by remember { mutableStateOf("") }
+    var legalStatus by remember { mutableStateOf("") }
+    var creationYear by remember { mutableStateOf("") }
+
+    // Sync state when orgMap emits or changes
+    LaunchedEffect(orgMap) {
+        if (orgMap.isNotEmpty()) {
+            orgName = orgMap["org_name"] ?: "Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage (des Jeunes)"
+            orgAcronym = orgMap["org_acronym"] ?: "AIL4C"
+            president = orgMap["org_president"] ?: "SENIN Tchoumou Esdras Gemiel"
+            founder = orgMap["org_founder"] ?: "Aka Koffi Ezéchiel"
+            motto = orgMap["org_motto"] ?: "Agir pour le Climat, Former la Jeunesse, Bâtir l'Avenir"
+            history = orgMap["org_about_history"] ?: "Créée en Côte d'Ivoire par des jeunes engagés pour la cause environnementale sous l'impulsion de son Président-Fondateur Aka Koffi Ezéchiel et présidée par SENIN Tchoumou Esdras Gemiel, l'Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage (AIL4C) œuvre activement pour la justice climatique, l'autonomisation de la jeunesse et le développement durable. Basée à Bouaké, l'ONG déploie des actions concrètes de reboisement massif, de salubrité urbaine, d'agroforesterie, de lutte contre les VBG et d'insertion professionnelle aux métiers verts."
+            mission = orgMap["org_mission"] ?: "Mobiliser toutes les populations contre les effets néfastes du changement climatique, lutter contre les violences basées sur le genre (VBG) et créer des perspectives concrètes d'emploi et de formation aux métiers verts pour toute la jeunesse sans exception."
+            vision = orgMap["org_vision"] ?: "Un environnement durable, vert et propre où chaque citoyen adopte des réflexes écologiques et où la jeunesse trouve dans la transition écologique un vecteur d'émancipation et d'épanouissement socio-économique."
+            objectives = orgMap["org_objectives"] ?: "1. Reboisement massif & Création de pépinières communautaires durables.\n2. Formation certifiante aux métiers verts (agro-écologie, recyclage, compostage).\n3. Salubrité urbaine, curage citoyen et prévention des inondations.\n4. Sensibilisation de masse en milieu scolaire et santé reproductive (UNFPA).\n5. Insertion professionnelle et accompagnement des jeunes porteurs d'éco-projets."
+            headquarters = orgMap["org_headquarters"] ?: "Bouaké, Région du Gbêkê, Côte d'Ivoire (Siège National)"
+            address = orgMap["org_address"] ?: "Siège National : Bouaké - Quartier Tchelekro / Koko / Commerce"
+            phone1 = orgMap["org_phone_1"] ?: "+225 07 89 71 02 89"
+            phone2 = orgMap["org_phone_2"] ?: "+225 07 89 97 63 23"
+            email = orgMap["org_email"] ?: "ongail4c@gmail.com"
+            websiteUrl = orgMap["org_website_url"] ?: "https://www.ongail4c.com"
+            websiteDomain = orgMap["org_website_domain"] ?: "www.ongail4c.com"
+            facebookPageName = orgMap["org_facebook_page_name"] ?: "ONG AIL4C (Page Facebook Officielle)"
+            facebookUrl = orgMap["org_facebook_url"] ?: "https://www.facebook.com/share/1GvChYFAMY/"
+            legalStatus = orgMap["org_legal_status"] ?: "Organisation Non Gouvernementale (ONG) à but non lucratif enregistrée en Côte d'Ivoire"
+            creationYear = orgMap["org_creation_year"] ?: "2023"
+        }
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Informations Institutionnelles AIL4C",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = AilForestGreen
-        )
-        Text(
-            text = "Coordonnées officielles et présentation de l'ONG issues de la page Facebook.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Gestion 'À Propos' & Informations ONG",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AilForestGreen
+                )
+                Text(
+                    text = "Toutes ces informations sont synchronisées en direct sur la page 'À Propos' de l'application.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.navigateTo(AppScreen.ABOUT) },
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("Voir l'Écran", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+        }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        OutlinedTextField(
-            value = headquarters,
-            onValueChange = { headquarters = it },
-            label = { Text("Siège et localisation") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-        Spacer(modifier = Modifier.height(10.dp))
+        // SECTION: Identité & Sigle
+        Text("1. Identité de l'Organisation", fontWeight = FontWeight.Bold, color = AilEmeraldDark)
+        Spacer(modifier = Modifier.height(6.dp))
 
         OutlinedTextField(
-            value = phone1,
-            onValueChange = { phone1 = it },
-            label = { Text("Téléphone Principal (WhatsApp)") },
+            value = orgName,
+            onValueChange = { orgName = it },
+            label = { Text("Nom complet de l'ONG") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = phone2,
-            onValueChange = { phone2 = it },
-            label = { Text("Téléphone Secondaire") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email officiel") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-        Spacer(modifier = Modifier.height(10.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(
+                value = orgAcronym,
+                onValueChange = { orgAcronym = it },
+                label = { Text("Sigle / Acronyme") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(
+                value = creationYear,
+                onValueChange = { creationYear = it },
+                label = { Text("Année création") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = motto,
@@ -1995,39 +2115,265 @@ fun AdminOrgInfoTab(viewModel: AilViewModel) {
             shape = RoundedCornerShape(12.dp)
         )
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SECTION: Gouvernance
+        Text("2. Gouvernance & Présidence", fontWeight = FontWeight.Bold, color = AilEmeraldDark)
+        Spacer(modifier = Modifier.height(6.dp))
+
+        OutlinedTextField(
+            value = president,
+            onValueChange = { president = it },
+            label = { Text("Président Actuel") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = founder,
+            onValueChange = { founder = it },
+            label = { Text("Président-Fondateur") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SECTION: Présentation, Mission, Vision, Piliers
+        Text("3. Contenu 'À Propos' (Historique, Mission, Vision)", fontWeight = FontWeight.Bold, color = AilEmeraldDark)
+        Spacer(modifier = Modifier.height(6.dp))
+
+        OutlinedTextField(
+            value = history,
+            onValueChange = { history = it },
+            label = { Text("Présentation & Historique de l'ONG") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 4,
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = mission,
+            onValueChange = { mission = it },
+            label = { Text("Notre Mission") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = vision,
+            onValueChange = { vision = it },
+            label = { Text("Notre Vision") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = objectives,
+            onValueChange = { objectives = it },
+            label = { Text("Objectifs & Piliers Stratégiques") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 4,
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SECTION: Coordonnées & Siège
+        Text("4. Coordonnées & Siège National", fontWeight = FontWeight.Bold, color = AilEmeraldDark)
+        Spacer(modifier = Modifier.height(6.dp))
+
+        OutlinedTextField(
+            value = headquarters,
+            onValueChange = { headquarters = it },
+            label = { Text("Siège et localisation") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = address,
+            onValueChange = { address = it },
+            label = { Text("Quartier & Adresse détaillée") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(
+                value = phone1,
+                onValueChange = { phone1 = it },
+                label = { Text("Tél 1 (WhatsApp)") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(
+                value = phone2,
+                onValueChange = { phone2 = it },
+                label = { Text("Tél 2") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email officiel") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = websiteDomain,
+            onValueChange = { 
+                websiteDomain = it
+                if (!it.startsWith("http")) {
+                    websiteUrl = "https://$it"
+                } else {
+                    websiteUrl = it
+                }
+            },
+            label = { Text("Site Web Officiel (ex: www.ongail4c.com)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = facebookPageName,
+            onValueChange = { facebookPageName = it },
+            label = { Text("Nom Page Facebook") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = facebookUrl,
+            onValueChange = { facebookUrl = it },
+            label = { Text("URL Page Facebook") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = legalStatus,
+            onValueChange = { legalStatus = it },
+            label = { Text("Statut Juridique") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
-                viewModel.updateOrgInfo("org_headquarters", headquarters)
-                viewModel.updateOrgInfo("org_phone_1", phone1)
-                viewModel.updateOrgInfo("org_phone_2", phone2)
-                viewModel.updateOrgInfo("org_email", email)
-                viewModel.updateOrgInfo("org_motto", motto)
+                val batch = mapOf(
+                    "org_name" to orgName,
+                    "org_acronym" to orgAcronym,
+                    "org_president" to president,
+                    "org_founder" to founder,
+                    "org_motto" to motto,
+                    "org_about_history" to history,
+                    "org_mission" to mission,
+                    "org_vision" to vision,
+                    "org_objectives" to objectives,
+                    "org_headquarters" to headquarters,
+                    "org_address" to address,
+                    "org_phone_1" to phone1,
+                    "org_phone_2" to phone2,
+                    "org_email" to email,
+                    "org_website_url" to websiteUrl,
+                    "org_website_domain" to websiteDomain,
+                    "org_facebook_page_name" to facebookPageName,
+                    "org_facebook_url" to facebookUrl,
+                    "org_legal_status" to legalStatus,
+                    "org_creation_year" to creationYear
+                )
+                viewModel.updateOrgInfoBatch(batch)
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(50.dp)
+                .testTag("admin_save_org_info_btn"),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen)
         ) {
             Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Enregistrer les modifications", fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Enregistrer toutes les informations 'À Propos'", fontWeight = FontWeight.Bold, color = Color.White)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedButton(
             onClick = {
-                viewModel.syncOfficialFacebookData()
+                viewModel.navigateTo(AppScreen.WEB_PORTAL)
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = AilEmerald)
         ) {
-            Text("Re-synchroniser toutes les données officielles Facebook", color = Color(0xFF1877F2), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Icon(Icons.Default.Language, contentDescription = null, tint = AilEmerald)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Ouvrir et Tester le Portail Web en Direct", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        var showClearConfirmDialog by remember { mutableStateOf(false) }
+
+        if (showClearConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearConfirmDialog = false },
+                title = { Text("Vider tous les éléments ?") },
+                text = { Text("Cette action efface toutes les actualités, événements, projets, formations, médias et indicateurs pour vous laisser un espace 100% vierge à alimenter vous-même.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.clearAllSampleContent()
+                            showClearConfirmDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Vider tout", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearConfirmDialog = false }) {
+                        Text("Annuler")
+                    }
+                }
+            )
+        }
+
+        OutlinedButton(
+            onClick = {
+                showClearConfirmDialog = true
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+        ) {
+            Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Vider tous les onglets (Remise à zéro)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
     }
 }

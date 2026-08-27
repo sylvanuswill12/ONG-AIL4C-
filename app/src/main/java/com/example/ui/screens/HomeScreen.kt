@@ -84,6 +84,8 @@ import com.example.ui.components.SectionHeader
 import com.example.ui.components.SpotlightHeroCard
 import com.example.ui.components.StatusBadge
 import com.example.ui.components.VolunteerDialog
+import com.example.ui.components.WebAccessBannerCard
+import com.example.ui.components.WebAccessDialog
 import com.example.ui.components.WeeklyStreakWidget
 import com.example.ui.theme.AilAmber
 import com.example.ui.theme.AilEmerald
@@ -107,10 +109,12 @@ fun HomeScreen(
     val allActions by viewModel.allActions.collectAsStateWithLifecycle()
     val allProjects by viewModel.allProjects.collectAsStateWithLifecycle()
     val userProfile by viewModel.currentUserProfile.collectAsStateWithLifecycle()
+    val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tous") }
     var showGeneralVolunteerDialog by remember { mutableStateOf(false) }
+    var showWebAccessDialog by remember { mutableStateOf(false) }
 
     val categories = listOf(
         "Tous" to Icons.Default.Eco,
@@ -120,6 +124,10 @@ fun HomeScreen(
         "Projets" to Icons.Default.Handshake,
         "Sensibilisation" to Icons.Default.Eco
     )
+
+    if (showWebAccessDialog) {
+        WebAccessDialog(onDismiss = { showWebAccessDialog = false })
+    }
 
     if (showGeneralVolunteerDialog) {
         VolunteerDialog(
@@ -276,6 +284,16 @@ fun HomeScreen(
             }
         }
 
+        // 0.2 Web Access & 24/7 Cloud Sync Banner
+        item {
+            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                WebAccessBannerCard(
+                    onOpenDialog = { showWebAccessDialog = true },
+                    onOpenWebPortal = { viewModel.navigateTo(AppScreen.WEB_PORTAL) }
+                )
+            }
+        }
+
         // 1. Search Bar
         item {
             ModernSearchBar(
@@ -355,25 +373,27 @@ fun HomeScreen(
             }
         }
 
-        // 6. Impact Counters
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionHeader(
-                title = "Notre Impact Écologique & Social",
-                subtitle = "Des résultats concrets mesurés sur le terrain"
-            )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(impactMetrics) { metric ->
-                    ImpactMetricCard(
-                        label = metric.label,
-                        value = metric.valueNumber,
-                        unit = metric.unit,
-                        iconKey = metric.iconKey,
-                        modifier = Modifier.width(170.dp)
-                    )
+        // 6. Impact Counters (Shown when indicators are defined)
+        if (impactMetrics.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                SectionHeader(
+                    title = "Notre Impact Écologique & Social",
+                    subtitle = "Des résultats concrets mesurés sur le terrain"
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(impactMetrics) { metric ->
+                        ImpactMetricCard(
+                            label = metric.label,
+                            value = metric.valueNumber,
+                            unit = metric.unit,
+                            iconKey = metric.iconKey,
+                            modifier = Modifier.width(170.dp)
+                        )
+                    }
                 }
             }
         }
@@ -392,10 +412,11 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 val trainers = listOf(
-                    Triple("Aka Koffi Ezéchiel", "Président Fondateur", "Agroforesterie"),
+                    Triple("SENIN Tchoumou Esdras Gemiel", "Président Actuel", "Gouvernance & Climat"),
+                    Triple("Aka Koffi Ezéchiel", "Président-Fondateur", "Agroforesterie & Vision"),
                     Triple("Kouamé Jean-Marc", "Formateur Senior", "Recyclage & Compost"),
                     Triple("Konan Adjoua Célestine", "Coordonnatrice Jeunesse", "Éco-Citoyenneté"),
-                    Triple("Bamba Souleymane", "Ingénieur Écologue", "Restoration Sols")
+                    Triple("Bamba Souleymane", "Ingénieur Écologue", "Restauration Sols")
                 )
                 items(trainers) { (name, role, specialty) ->
                     MentorProfileCard(
@@ -427,12 +448,31 @@ fun HomeScreen(
 
         if (upcomingActions.isEmpty()) {
             item {
-                Text(
-                    text = "Aucune action planifiée pour le moment.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = AilEmerald,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Aucun événement pour le moment. Ajoutez vos actions via l'espace Administration.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         } else {
             items(upcomingActions) { action ->
@@ -459,15 +499,45 @@ fun HomeScreen(
         }
 
         val latestNews = allNews.take(3)
-        items(latestNews) { news ->
-            HomeNewsCard(
-                news = news,
-                onClick = {
-                    viewModel.selectNews(news)
-                    viewModel.navigateTo(AppScreen.NEWS)
-                },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-            )
+        if (latestNews.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Newspaper,
+                            contentDescription = null,
+                            tint = AilEmerald,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Aucune actualité publiée pour le moment. Ajoutez vos articles via l'espace Administration.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        } else {
+            items(latestNews) { news ->
+                HomeNewsCard(
+                    news = news,
+                    onClick = {
+                        viewModel.selectNews(news)
+                        viewModel.navigateTo(AppScreen.NEWS)
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
         }
 
         // 10. Facebook Community Connect Card
@@ -566,30 +636,39 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
+                val presidentName = orgMap["org_president"] ?: "SENIN Tchoumou Esdras Gemiel"
+                val founderName = orgMap["org_founder"] ?: "Aka Koffi Ezéchiel"
+                val phone1Number = orgMap["org_phone_1"] ?: "+225 07 89 71 02 89"
+
                 Column(modifier = Modifier.padding(18.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // President & Founder Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         ResolveImage(
                             imageName = "img_founder_portrait",
-                            contentDescription = "Aka Koffi Ezéchiel - Président Fondateur AIL4C",
+                            contentDescription = "$presidentName - Président Actuel AIL4C",
                             modifier = Modifier
-                                .size(54.dp)
+                                .size(56.dp)
                                 .clip(CircleShape)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Aka Koffi Ezéchiel",
+                                text = presidentName,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Président-Fondateur de l'AIL4C",
+                                text = "Président Actuel de l'AIL4C",
                                 style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
                                 color = AilEmerald
                             )
                             Text(
-                                text = "Côte d'Ivoire • Siège National",
+                                text = "Initiateur & Fondateur : $founderName",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -603,6 +682,13 @@ fun HomeScreen(
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    Text(
+                        text = "— Mot de la Présidence de l'ONG AIL4C",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = AilEmeraldDark,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
 
                     Spacer(modifier = Modifier.height(14.dp))
                     Row(
@@ -612,10 +698,10 @@ fun HomeScreen(
                         Button(
                             onClick = {
                                 try {
-                                    val callIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:+2250789710289"))
+                                    val callIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${phone1Number.replace(" ", "")}"))
                                     context.startActivity(callIntent)
                                 } catch (e: Exception) {
-                                    viewModel.showToast("Téléphone : +225 07 89 71 02 89")
+                                    viewModel.showToast("Téléphone : $phone1Number")
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = AilEmerald),
@@ -624,24 +710,19 @@ fun HomeScreen(
                         ) {
                             Icon(Icons.Default.Call, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Appeler le Siège", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            Text("Appeler Siège", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
 
                         OutlinedButton(
                             onClick = {
-                                try {
-                                    val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/2250789710289?text=Bonjour%20AIL4C%2C%20je%20souhaite%20en%20savoir%20plus"))
-                                    context.startActivity(waIntent)
-                                } catch (e: Exception) {
-                                    viewModel.showToast("WhatsApp : +225 07 89 71 02 89")
-                                }
+                                viewModel.navigateTo(AppScreen.ABOUT)
                             },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.Chat, contentDescription = null, tint = AilEmerald, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Eco, contentDescription = null, tint = AilEmerald, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("WhatsApp", color = AilEmerald, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            Text("À Propos", color = AilEmerald, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
                     }
                 }
