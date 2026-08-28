@@ -70,7 +70,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.AdminLoginDialog
 import com.example.ui.components.ResolveImage
-import com.example.ui.components.WebAccessDialog
 import com.example.ui.screens.AboutScreen
 import com.example.ui.screens.ActionsScreen
 import com.example.ui.screens.AdminScreen
@@ -82,7 +81,6 @@ import com.example.ui.screens.NewsScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.ProjectsScreen
 import com.example.ui.screens.TrainingsScreen
-import com.example.ui.screens.WebPortalScreen
 import com.example.ui.theme.AilEmerald
 import com.example.ui.theme.AilEmeraldDark
 import com.example.ui.theme.AilEmeraldLight
@@ -125,7 +123,6 @@ fun AilAppMain(viewModel: AilViewModel) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAdminPinDialog by remember { mutableStateOf(false) }
-    var showWebAccessDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.toastMessage.collectLatest { message ->
@@ -139,10 +136,6 @@ fun AilAppMain(viewModel: AilViewModel) {
             viewModel.navigateTo(AppScreen.HOME)
             viewModel.showToast("Accès réservé aux administrateurs autorisés (atchouyaosylvain59@gmail.com, ail4c03@gmail.com).")
         }
-    }
-
-    if (showWebAccessDialog) {
-        WebAccessDialog(onDismiss = { showWebAccessDialog = false })
     }
 
     if (showAdminPinDialog) {
@@ -203,30 +196,6 @@ fun AilAppMain(viewModel: AilViewModel) {
                     }
                 },
                 actions = {
-                    // Web Portal & Browser Access shortcut
-                    Surface(
-                        onClick = { showWebAccessDialog = true },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier
-                            .padding(end = 4.dp)
-                            .testTag("topbar_web_access_btn")
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .padding(8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Public,
-                                contentDescription = "Accès Web 24h/24",
-                                tint = AilEmeraldDark,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
                     // Cloud Sync status & instant refresh
                     Surface(
                         onClick = { viewModel.triggerManualCloudSync() },
@@ -268,7 +237,7 @@ fun AilAppMain(viewModel: AilViewModel) {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "IA AWA",
+                                contentDescription = "ÉcoBot IA",
                                 tint = if (currentScreen == AppScreen.AI_ASSISTANT) Color.White else AilEmerald,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -491,10 +460,9 @@ fun AilAppMain(viewModel: AilViewModel) {
                 AppScreen.ABOUT -> AboutScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
                 AppScreen.PROFILE -> ProfileScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
                 AppScreen.ADMIN -> AdminScreen(viewModel = viewModel)
-                AppScreen.WEB_PORTAL -> WebPortalScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
             }
 
-            // Bouton rond flottant IA Awa positionné juste en haut de l'onglet Profil (en bas à droite)
+            // Bouton rond flottant ÉcoBot IA positionné juste en haut de l'onglet Profil (en bas à droite)
             if (currentScreen != AppScreen.AI_ASSISTANT) {
                 Surface(
                     onClick = { viewModel.navigateTo(AppScreen.AI_ASSISTANT) },
@@ -512,7 +480,7 @@ fun AilAppMain(viewModel: AilViewModel) {
                             ),
                             shape = CircleShape
                         )
-                        .testTag("floating_awa_ai_btn")
+                        .testTag("floating_ecobot_ai_btn")
                 ) {
                     Box(
                         modifier = Modifier
@@ -529,13 +497,13 @@ fun AilAppMain(viewModel: AilViewModel) {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "IA AWA - Conseillère Climat & Écologie",
+                                contentDescription = "ÉcoBot IA - Assistant Intelligent & Connecté",
                                 tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
                             Text(
-                                text = "AWA",
-                                fontSize = 9.sp,
+                                text = "ÉCOBOT",
+                                fontSize = 8.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.White,
                                 letterSpacing = 0.5.sp

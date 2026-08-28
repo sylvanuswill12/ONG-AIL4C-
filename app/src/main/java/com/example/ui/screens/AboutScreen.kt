@@ -68,8 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.ResolveImage
-import com.example.ui.components.WebAccessBannerCard
-import com.example.ui.components.WebAccessDialog
 import com.example.ui.theme.AilEmerald
 import com.example.ui.theme.AilEmeraldDark
 import com.example.ui.theme.AilEmeraldLight
@@ -91,11 +89,6 @@ fun AboutScreen(
     val context = LocalContext.current
     val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
     val isUserAdminAuthorized by viewModel.isUserAdminAuthorized.collectAsStateWithLifecycle()
-    var showWebAccessDialog by remember { mutableStateOf(false) }
-
-    if (showWebAccessDialog) {
-        WebAccessDialog(onDismiss = { showWebAccessDialog = false })
-    }
 
     val orgName = orgMap["org_name"] ?: "Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage (des Jeunes)"
     val orgAcronym = orgMap["org_acronym"] ?: "AIL4C"
@@ -624,19 +617,6 @@ fun AboutScreen(
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.LightGray.copy(alpha = 0.3f))
 
-                        // Site Web Officiel
-                        ContactInfoRow(
-                            icon = Icons.Default.Public,
-                            label = "Site Web Officiel (Accès 24h/24)",
-                            value = websiteDomain,
-                            subValue = websiteUrl,
-                            onClick = {
-                                viewModel.navigateTo(AppScreen.WEB_PORTAL)
-                            }
-                        )
-
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.LightGray.copy(alpha = 0.3f))
-
                         // Facebook
                         ContactInfoRow(
                             icon = Icons.Default.OpenInBrowser,
@@ -663,14 +643,6 @@ fun AboutScreen(
                         )
                     }
                 }
-            }
-
-            // Web Portal & 24/7 Cloud Sync Access Card
-            item {
-                WebAccessBannerCard(
-                    onOpenDialog = { showWebAccessDialog = true },
-                    onOpenWebPortal = { viewModel.navigateTo(AppScreen.WEB_PORTAL) }
-                )
             }
 
             // Quick Admin Edit Shortcut (Only for Authorized Admins)

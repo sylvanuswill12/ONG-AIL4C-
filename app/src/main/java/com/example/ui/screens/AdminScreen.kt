@@ -3,7 +3,11 @@ package com.example.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,21 +29,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -90,9 +99,11 @@ import com.example.data.model.TrainingEntity
 import com.example.data.model.VolunteerRegistrationEntity
 import com.example.ui.components.AdminLoginDialog
 import com.example.ui.components.EcoCategoryBadge
+import com.example.ui.components.ResolveImage
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.AilEmerald
 import com.example.ui.theme.AilEmeraldDark
+import com.example.ui.theme.AilEmeraldLight
 import com.example.ui.theme.AilForestDark
 import com.example.ui.theme.AilForestGreen
 import com.example.ui.theme.AilGold
@@ -104,8 +115,11 @@ import com.example.ui.theme.AilTagTraining
 import com.example.ui.theme.AilTerracotta
 import com.example.ui.viewmodel.AilViewModel
 import com.example.ui.viewmodel.AppScreen
+import java.io.File
+import java.io.FileOutputStream
 
 enum class AdminTab {
+    HOME_CONFIG,
     NEWS,
     ACTIONS,
     PROJECTS,
@@ -639,6 +653,7 @@ fun AdminScreen(
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(AdminTab.values()) { tab ->
                             val label = when (tab) {
+                                AdminTab.HOME_CONFIG -> "Accueil & Config"
                                 AdminTab.NEWS -> "Actualités (${allNews.size})"
                                 AdminTab.ACTIONS -> "Actions (${allActions.size})"
                                 AdminTab.PROJECTS -> "Projets (${allProjects.size})"
@@ -665,6 +680,12 @@ fun AdminScreen(
 
         // Sub-Tab Content
         when (selectedTab) {
+            AdminTab.HOME_CONFIG -> {
+                item {
+                    AdminHomeConfigTab(viewModel = viewModel)
+                }
+            }
+
             AdminTab.NEWS -> {
                 item {
                     AdminSectionBar(
@@ -1309,6 +1330,135 @@ fun AdminApplicationCard(
     }
 }
 
+// Helper for saving local media files (photos / videos)
+fun saveMediaLocally(context: Context, uri: Uri, isVideo: Boolean): String? {
+    return try {
+        val extension = if (isVideo) "mp4" else "jpg"
+        val prefix = if (isVideo) "vid_" else "img_"
+        val fileName = "${prefix}${System.currentTimeMillis()}.$extension"
+        val file = File(context.filesDir, fileName)
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(file).use { output ->
+                input.copyTo(output)
+            }
+        }
+        file.absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+@Composable
+fun AdminMediaPickerSection(
+    currentMedia: String,
+    onMediaChanged: (String) -> Unit,
+    label: String = "Illustration média (Photo ou Vidéo locale)"
+) {
+    val context = LocalContext.current
+    var uploadStatusMessage by remember { mutableStateOf<String?>(null) }
+
+    // Launcher for Photos / Images
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val savedPath = saveMediaLocally(context, uri, isVideo = false)
+            if (savedPath != null) {
+                onMediaChanged(savedPath)
+                uploadStatusMessage = "Photo importée avec succès !"
+            } else {
+                uploadStatusMessage = "Échec de l'importation de l'image."
+            }
+        }
+    }
+
+    // Launcher for Videos
+    val videoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val savedPath = saveMediaLocally(context, uri, isVideo = true)
+            if (savedPath != null) {
+                onMediaChanged(savedPath)
+                uploadStatusMessage = "Vidéo importée avec succès !"
+            } else {
+                uploadStatusMessage = "Échec de l'importation de la vidéo."
+            }
+        }
+    }
+
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = AilForestDark
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Media Preview Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFE8F5E9)),
+                contentAlignment = Alignment.Center
+            ) {
+                ResolveImage(
+                    imageName = currentMedia,
+                    contentDescription = "Aperçu de l'illustration",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Upload buttons: Add Photo or Add Video
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { photoPickerLauncher.launch("image/*") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(16.dp), tint = AilEmeraldDark)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Ajouter Photo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AilEmeraldDark)
+                }
+
+                OutlinedButton(
+                    onClick = { videoPickerLauncher.launch("video/*") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Videocam, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFFC0392B))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Ajouter Vidéo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC0392B))
+                }
+            }
+
+            if (uploadStatusMessage != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = uploadStatusMessage!!,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AilForestGreen,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
 // Dialog: Add/Edit News
 @Composable
 fun AdminNewsFormDialog(
@@ -1375,6 +1525,14 @@ fun AdminNewsFormDialog(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
+                    // Media Picker for photo / video
+                    AdminMediaPickerSection(
+                        currentMedia = imageResName,
+                        onMediaChanged = { imageResName = it },
+                        label = "Photo ou Vidéo de l'article"
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
                     OutlinedTextField(
                         value = category,
                         onValueChange = { category = it },
@@ -1426,13 +1584,14 @@ fun AdminNewsFormDialog(
                                     category = "",
                                     dateText = "",
                                     imageResName = imageResName
-                                )).copy(
+                                ))!!.copy(
                                     title = title.trim(),
                                     summary = summary.trim(),
                                     content = content.trim(),
                                     category = category.trim(),
                                     author = author.trim(),
                                     dateText = dateText.trim(),
+                                    imageResName = imageResName,
                                     isFeatured = isFeatured
                                 )
                                 onSave(item)
@@ -1467,6 +1626,7 @@ fun AdminActionFormDialog(
     var coordinatorName by remember { mutableStateOf(initial?.coordinatorName ?: "Kouamé Eric") }
     var coordinatorContact by remember { mutableStateOf(initial?.coordinatorContact ?: "+225 07 00 00 00 00") }
     var recommendedGear by remember { mutableStateOf(initial?.recommendedGear ?: "Gants, gourde d'eau") }
+    var imageResName by remember { mutableStateOf(initial?.imageResName ?: "img_waste_cleanup") }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1482,7 +1642,7 @@ fun AdminActionFormDialog(
             LazyColumn(modifier = Modifier.padding(20.dp)) {
                 item {
                     Text(
-                        text = if (initial == null) "Ajouter une Action Terrain" else "Modifier l'Action",
+                        text = if (initial == null) "Ajouter une Action / Événement" else "Modifier l'Action / Événement",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = AilForestGreen
@@ -1492,7 +1652,7 @@ fun AdminActionFormDialog(
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("Titre de l'action *") },
+                        label = { Text("Titre de l'action / événement *") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -1501,10 +1661,18 @@ fun AdminActionFormDialog(
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text("Description complète *") },
+                        label = { Text("Description complète de l'événement *") },
                         maxLines = 4,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Media upload (photo/video illustration)
+                    AdminMediaPickerSection(
+                        currentMedia = imageResName,
+                        onMediaChanged = { imageResName = it },
+                        label = "Illustration photo ou vidéo téléchargée localement"
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -1570,6 +1738,15 @@ fun AdminActionFormDialog(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = recommendedGear,
+                        onValueChange = { recommendedGear = it },
+                        label = { Text("Équipement recommandé") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
 
                     Spacer(modifier = Modifier.height(18.dp))
 
@@ -1594,7 +1771,7 @@ fun AdminActionFormDialog(
                                     coordinatorName = "",
                                     coordinatorContact = "",
                                     recommendedGear = "",
-                                    imageResName = "img_waste_cleanup"
+                                    imageResName = imageResName
                                 )).copy(
                                     title = title.trim(),
                                     description = description.trim(),
@@ -1606,7 +1783,8 @@ fun AdminActionFormDialog(
                                     maxSpots = maxSpots.toIntOrNull() ?: 100,
                                     coordinatorName = coordinatorName.trim(),
                                     coordinatorContact = coordinatorContact.trim(),
-                                    recommendedGear = recommendedGear.trim()
+                                    recommendedGear = recommendedGear.trim(),
+                                    imageResName = imageResName
                                 )
                                 onSave(item)
                             },
@@ -1637,6 +1815,7 @@ fun AdminProjectFormDialog(
     var targetObjective by remember { mutableStateOf(initial?.targetObjective ?: "10 000 plants") }
     var expectedImpact by remember { mutableStateOf(initial?.expectedImpact ?: "Restauration écologique et emplois") }
     var partnerName by remember { mutableStateOf(initial?.partnerName ?: "Partenaires Locaux") }
+    var imageResName by remember { mutableStateOf(initial?.imageResName ?: "img_hero_reforestation") }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1684,6 +1863,14 @@ fun AdminProjectFormDialog(
                         maxLines = 4,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Media Picker
+                    AdminMediaPickerSection(
+                        currentMedia = imageResName,
+                        onMediaChanged = { imageResName = it },
+                        label = "Illustration photo ou vidéo du projet"
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -1745,7 +1932,7 @@ fun AdminProjectFormDialog(
                                     status = "Actif",
                                     expectedImpact = "",
                                     partnerName = "",
-                                    imageResName = "img_hero_reforestation"
+                                    imageResName = imageResName
                                 )).copy(
                                     title = title.trim(),
                                     summary = summary.trim(),
@@ -1754,7 +1941,8 @@ fun AdminProjectFormDialog(
                                     raisedBudget = raisedBudget.toLongOrNull() ?: 0L,
                                     targetObjective = targetObjective.trim(),
                                     expectedImpact = expectedImpact.trim(),
-                                    partnerName = partnerName.trim()
+                                    partnerName = partnerName.trim(),
+                                    imageResName = imageResName
                                 )
                                 onSave(item)
                             },
@@ -1787,6 +1975,7 @@ fun AdminTrainingFormDialog(
     var spotsAvailable by remember { mutableStateOf((initial?.spotsAvailable ?: 25).toString()) }
     var description by remember { mutableStateOf(initial?.description ?: "") }
     var isRegistrationOpen by remember { mutableStateOf(initial?.isRegistrationOpen ?: true) }
+    var imageResName by remember { mutableStateOf(initial?.imageResName ?: "img_youth_training") }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1824,6 +2013,14 @@ fun AdminTrainingFormDialog(
                         label = { Text("Domaine (Agro-écologie, Recyclage, etc.)") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Media Picker
+                    AdminMediaPickerSection(
+                        currentMedia = imageResName,
+                        onMediaChanged = { imageResName = it },
+                        label = "Illustration photo ou vidéo de la formation"
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -1908,7 +2105,7 @@ fun AdminTrainingFormDialog(
                                     certification = "",
                                     spotsAvailable = 25,
                                     description = "",
-                                    imageResName = "img_youth_training"
+                                    imageResName = imageResName
                                 )).copy(
                                     title = title.trim(),
                                     domain = domain.trim(),
@@ -1919,7 +2116,8 @@ fun AdminTrainingFormDialog(
                                     certification = certification.trim(),
                                     spotsAvailable = spotsAvailable.toIntOrNull() ?: 25,
                                     description = description.trim(),
-                                    isRegistrationOpen = isRegistrationOpen
+                                    isRegistrationOpen = isRegistrationOpen,
+                                    imageResName = imageResName
                                 )
                                 onSave(item)
                             },
@@ -2316,23 +2514,6 @@ fun AdminOrgInfoTab(viewModel: AilViewModel) {
             Text("Enregistrer toutes les informations 'À Propos'", fontWeight = FontWeight.Bold, color = Color.White)
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(
-            onClick = {
-                viewModel.navigateTo(AppScreen.WEB_PORTAL)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AilEmerald)
-        ) {
-            Icon(Icons.Default.Language, contentDescription = null, tint = AilEmerald)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Ouvrir et Tester le Portail Web en Direct", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-        }
-
         Spacer(modifier = Modifier.height(16.dp))
 
         var showClearConfirmDialog by remember { mutableStateOf(false) }
@@ -2374,6 +2555,358 @@ fun AdminOrgInfoTab(viewModel: AilViewModel) {
             Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Vider tous les onglets (Remise à zéro)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+    }
+}
+
+// TAB: Admin Home Page Content & App Configuration
+@Composable
+fun AdminHomeConfigTab(viewModel: AilViewModel) {
+    val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
+
+    // Home Hero Spotlight
+    var heroTag by remember(orgMap) { mutableStateOf(orgMap["home_hero_tag"] ?: "Campagne Urgence Reboisement 2026") }
+    var heroTitle by remember(orgMap) { mutableStateOf(orgMap["home_hero_title"] ?: "Agir maintenant pour le climat et la biodiversité") }
+    var heroDescription by remember(orgMap) {
+        mutableStateOf(
+            orgMap["home_hero_description"]
+                ?: "Rejoignez l'AIL4C dans la création de corridors écologiques et la formation de 5 000 jeunes écocitoyens à travers toute la Côte d'Ivoire."
+        )
+    }
+    var heroImage by remember(orgMap) { mutableStateOf(orgMap["home_hero_image"] ?: "img_hero_reforestation") }
+    var heroActionText by remember(orgMap) { mutableStateOf(orgMap["home_hero_action_text"] ?: "Devenir Bénévole") }
+
+    // AI Assistant Banner
+    var aiBannerTitle by remember(orgMap) { mutableStateOf(orgMap["home_ai_banner_title"] ?: "Assistant Éco-Intelligence Artificielle") }
+    var aiBannerDescription by remember(orgMap) {
+        mutableStateOf(
+            orgMap["home_ai_banner_description"]
+                ?: "Posez toutes vos questions sur les essences d'arbres ivoiriennes, le compostage, les techniques de pépinière et l'agro-foresterie."
+        )
+    }
+    var aiBannerBtn by remember(orgMap) { mutableStateOf(orgMap["home_ai_banner_btn"] ?: "Ouvrir l'Assistant Éco-Conseils") }
+
+    // President Quote Card
+    var quoteText by remember(orgMap) {
+        mutableStateOf(
+            orgMap["home_president_quote"]
+                ?: "« La jeunesse ivoirienne est le moteur du changement écologique. Chaque arbre planté est une promesse d'avenir pour nos terroirs. »"
+        )
+    }
+    var quoteAuthor by remember(orgMap) { mutableStateOf(orgMap["home_president_author"] ?: "M. Kouamé Eric") }
+    var quoteRole by remember(orgMap) { mutableStateOf(orgMap["home_president_role"] ?: "Président Exécutif AIL4C") }
+
+    // Facebook / Social Section
+    var fbBannerTitle by remember(orgMap) { mutableStateOf(orgMap["home_facebook_banner_title"] ?: "Communauté & Direct Facebook") }
+    var fbBannerSubtitle by remember(orgMap) {
+        mutableStateOf(
+            orgMap["home_facebook_banner_subtitle"]
+                ?: "Retrouvez nos reportages vidéos sur le terrain, nos directs de reboisement et échangez avec plus de 25 000 membres actifs."
+        )
+    }
+    var fbBtnText by remember(orgMap) { mutableStateOf(orgMap["home_facebook_btn_text"] ?: "Accéder à notre Page Facebook") }
+
+    // Sections visibility & headers
+    var sectionNewsTitle by remember(orgMap) { mutableStateOf(orgMap["home_section_news_title"] ?: "Actualités & Reportages") }
+    var sectionActionsTitle by remember(orgMap) { mutableStateOf(orgMap["home_section_actions_title"] ?: "Prochaines Actions Terrain") }
+    var sectionImpactTitle by remember(orgMap) { mutableStateOf(orgMap["home_section_impact_title"] ?: "Impact Mesurable AIL4C") }
+
+    var saveFeedback by remember { mutableStateOf<String?>(null) }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Personnalisation Globale : Page d'Accueil & Textes",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = AilForestDark
+        )
+        Text(
+            text = "Modifiez directement tous les textes, bannières, illustrations médias et messages de la page d'accueil de l'application sans recompiler.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SECTION 1: Bannière Vedette (Hero Spotlight)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = AilGold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("1. Bannière Vedette (Hero Accueil)", fontWeight = FontWeight.Bold, color = AilForestDark)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = heroTag,
+                    onValueChange = { heroTag = it },
+                    label = { Text("Badge / Tag de la bannière") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = heroTitle,
+                    onValueChange = { heroTitle = it },
+                    label = { Text("Grand Titre Hero") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = heroDescription,
+                    onValueChange = { heroDescription = it },
+                    label = { Text("Texte Descriptif Hero") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Hero Image / Video Picker
+                AdminMediaPickerSection(
+                    currentMedia = heroImage,
+                    onMediaChanged = { heroImage = it },
+                    label = "Illustration photo ou vidéo de la Bannière Hero"
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = heroActionText,
+                    onValueChange = { heroActionText = it },
+                    label = { Text("Texte du bouton d'action Hero") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 2: Bannière Assistant IA Écologique
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text("2. Bannière Assistant IA Écologique", fontWeight = FontWeight.Bold, color = AilForestDark)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = aiBannerTitle,
+                    onValueChange = { aiBannerTitle = it },
+                    label = { Text("Titre du module IA") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiBannerDescription,
+                    onValueChange = { aiBannerDescription = it },
+                    label = { Text("Description du service IA") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiBannerBtn,
+                    onValueChange = { aiBannerBtn = it },
+                    label = { Text("Texte du bouton") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 3: Citation & Mot du Président
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text("3. Citation & Mot de la Présidence", fontWeight = FontWeight.Bold, color = AilForestDark)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = quoteText,
+                    onValueChange = { quoteText = it },
+                    label = { Text("Citation / Message clé") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = quoteAuthor,
+                    onValueChange = { quoteAuthor = it },
+                    label = { Text("Auteur de la citation") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = quoteRole,
+                    onValueChange = { quoteRole = it },
+                    label = { Text("Titre / Rôle (ex: Président Exécutif AIL4C)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 4: Bloc Facebook & Réseaux Sociaux
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text("4. Bloc Facebook & Communauté", fontWeight = FontWeight.Bold, color = AilForestDark)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = fbBannerTitle,
+                    onValueChange = { fbBannerTitle = it },
+                    label = { Text("Titre du bloc communauté") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = fbBannerSubtitle,
+                    onValueChange = { fbBannerSubtitle = it },
+                    label = { Text("Sous-titre / Explication") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = fbBtnText,
+                    onValueChange = { fbBtnText = it },
+                    label = { Text("Texte du bouton Facebook") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 5: Intitulés des sections de la page d'accueil
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text("5. Titres des Sections Accueil", fontWeight = FontWeight.Bold, color = AilForestDark)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = sectionNewsTitle,
+                    onValueChange = { sectionNewsTitle = it },
+                    label = { Text("Titre section Actualités") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = sectionActionsTitle,
+                    onValueChange = { sectionActionsTitle = it },
+                    label = { Text("Titre section Actions Terrain") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = sectionImpactTitle,
+                    onValueChange = { sectionImpactTitle = it },
+                    label = { Text("Titre section Indicateurs d'Impact") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        if (saveFeedback != null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = AilMintLight),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Text(
+                    text = saveFeedback!!,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AilForestDark,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
+
+        Button(
+            onClick = {
+                val batch = mapOf(
+                    "home_hero_tag" to heroTag.trim(),
+                    "home_hero_title" to heroTitle.trim(),
+                    "home_hero_description" to heroDescription.trim(),
+                    "home_hero_image" to heroImage.trim(),
+                    "home_hero_action_text" to heroActionText.trim(),
+                    "home_ai_banner_title" to aiBannerTitle.trim(),
+                    "home_ai_banner_description" to aiBannerDescription.trim(),
+                    "home_ai_banner_btn" to aiBannerBtn.trim(),
+                    "home_president_quote" to quoteText.trim(),
+                    "home_president_author" to quoteAuthor.trim(),
+                    "home_president_role" to quoteRole.trim(),
+                    "home_facebook_banner_title" to fbBannerTitle.trim(),
+                    "home_facebook_banner_subtitle" to fbBannerSubtitle.trim(),
+                    "home_facebook_btn_text" to fbBtnText.trim(),
+                    "home_section_news_title" to sectionNewsTitle.trim(),
+                    "home_section_actions_title" to sectionActionsTitle.trim(),
+                    "home_section_impact_title" to sectionImpactTitle.trim()
+                )
+                viewModel.updateOrgInfoBatch(batch)
+                saveFeedback = "Toutes les modifications de la page d'accueil ont été enregistrées avec succès !"
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen)
+        ) {
+            Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Enregistrer les Modifications de la Page d'Accueil", fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }

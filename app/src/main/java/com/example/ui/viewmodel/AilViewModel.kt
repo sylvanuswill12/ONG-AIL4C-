@@ -39,8 +39,7 @@ enum class AppScreen {
     AI_ASSISTANT,
     ABOUT,
     PROFILE,
-    ADMIN,
-    WEB_PORTAL
+    ADMIN
 }
 
 class AilViewModel(application: Application) : AndroidViewModel(application) {

@@ -101,6 +101,10 @@ import com.example.ui.theme.AilTagTraining
 import com.example.ui.theme.AilTagWaste
 import com.example.ui.theme.AilTerracotta
 
+import coil.compose.AsyncImage
+import java.io.File
+import androidx.compose.material.icons.filled.PlayCircle
+
 @Composable
 fun ResolveImage(
     imageName: String?,
@@ -108,22 +112,72 @@ fun ResolveImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop
 ) {
-    val resId = when (imageName?.trim()) {
-        "img_hero_reforestation" -> R.drawable.img_hero_reforestation
-        "img_youth_training" -> R.drawable.img_youth_training
-        "img_waste_cleanup" -> R.drawable.img_waste_cleanup
-        "img_community_action" -> R.drawable.img_community_action
-        "img_founder_portrait" -> R.drawable.img_youth_training
-        "img_ail4c_logo" -> R.drawable.img_ail4c_logo
-        else -> R.drawable.img_ail4c_logo
-    }
+    val imgStr = imageName?.trim().orEmpty()
+    val isVideo = imgStr.endsWith(".mp4", ignoreCase = true) ||
+            imgStr.endsWith(".mkv", ignoreCase = true) ||
+            imgStr.endsWith(".mov", ignoreCase = true) ||
+            imgStr.endsWith(".webm", ignoreCase = true) ||
+            imgStr.contains("video", ignoreCase = true)
 
-    Image(
-        painter = painterResource(id = resId),
-        contentDescription = contentDescription,
-        modifier = modifier,
-        contentScale = contentScale
-    )
+    val isLocalFileOrUri = imgStr.startsWith("/") || 
+            imgStr.startsWith("file:") || 
+            imgStr.startsWith("content:") || 
+            imgStr.startsWith("http:") || 
+            imgStr.startsWith("https:")
+
+    Box(modifier = modifier) {
+        if (isLocalFileOrUri) {
+            val modelData = if (imgStr.startsWith("/")) File(imgStr) else imgStr
+            AsyncImage(
+                model = modelData,
+                contentDescription = contentDescription,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = contentScale,
+                placeholder = painterResource(id = R.drawable.img_ail4c_logo),
+                error = painterResource(id = R.drawable.img_ail4c_logo)
+            )
+        } else {
+            val resId = when (imgStr) {
+                "img_hero_reforestation" -> R.drawable.img_hero_reforestation
+                "img_youth_training" -> R.drawable.img_youth_training
+                "img_waste_cleanup" -> R.drawable.img_waste_cleanup
+                "img_community_action" -> R.drawable.img_community_action
+                "img_founder_portrait" -> R.drawable.img_youth_training
+                "img_ail4c_logo" -> R.drawable.img_ail4c_logo
+                else -> R.drawable.img_ail4c_logo
+            }
+            Image(
+                painter = painterResource(id = resId),
+                contentDescription = contentDescription,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = contentScale
+            )
+        }
+
+        if (isVideo) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.25f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.6f),
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.PlayCircle,
+                            contentDescription = "Vidéo",
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

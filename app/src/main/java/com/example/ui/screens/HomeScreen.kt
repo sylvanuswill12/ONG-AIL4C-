@@ -84,8 +84,6 @@ import com.example.ui.components.SectionHeader
 import com.example.ui.components.SpotlightHeroCard
 import com.example.ui.components.StatusBadge
 import com.example.ui.components.VolunteerDialog
-import com.example.ui.components.WebAccessBannerCard
-import com.example.ui.components.WebAccessDialog
 import com.example.ui.components.WeeklyStreakWidget
 import com.example.ui.theme.AilAmber
 import com.example.ui.theme.AilEmerald
@@ -114,7 +112,6 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tous") }
     var showGeneralVolunteerDialog by remember { mutableStateOf(false) }
-    var showWebAccessDialog by remember { mutableStateOf(false) }
 
     val categories = listOf(
         "Tous" to Icons.Default.Eco,
@@ -124,10 +121,6 @@ fun HomeScreen(
         "Projets" to Icons.Default.Handshake,
         "Sensibilisation" to Icons.Default.Eco
     )
-
-    if (showWebAccessDialog) {
-        WebAccessDialog(onDismiss = { showWebAccessDialog = false })
-    }
 
     if (showGeneralVolunteerDialog) {
         VolunteerDialog(
@@ -222,6 +215,8 @@ fun HomeScreen(
 
         // 0.1 AI Assistant Warm Welcome Banner
         item {
+            val aiWelcomeTitle = orgMap["home_ai_title"] ?: "ÉcoBot IA • Assistant Connecté en Direct"
+            val aiWelcomeSubtitle = orgMap["home_ai_subtitle"] ?: "Posez vos questions sur le climat, l'agroforesterie, les formations et l'ONG AIL4C."
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -247,7 +242,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "IA AWA",
+                            contentDescription = "ÉcoBot IA",
                             tint = Color.White,
                             modifier = Modifier.size(22.dp)
                         )
@@ -258,14 +253,14 @@ fun HomeScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "AWA vous souhaite la bienvenue !",
+                                text = aiWelcomeTitle,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = AilEmeraldDark
                             )
                         }
                         Text(
-                            text = "Je suis votre Éco-Assistante IA. Posez-moi vos questions sur nos actions écologiques et citoyennes.",
+                            text = aiWelcomeSubtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.DarkGray,
                             fontSize = 11.sp,
@@ -281,16 +276,6 @@ fun HomeScreen(
                         modifier = Modifier.size(18.dp)
                     )
                 }
-            }
-        }
-
-        // 0.2 Web Access & 24/7 Cloud Sync Banner
-        item {
-            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                WebAccessBannerCard(
-                    onOpenDialog = { showWebAccessDialog = true },
-                    onOpenWebPortal = { viewModel.navigateTo(AppScreen.WEB_PORTAL) }
-                )
             }
         }
 
@@ -314,14 +299,21 @@ fun HomeScreen(
 
         // 3. Spotlight Hero Card
         item {
+            val heroTitle = orgMap["home_hero_title"] ?: "Grande Campagne : 25 000 Arbres pour le Climat"
+            val heroSubtitle = orgMap["home_hero_subtitle"] ?: "Avec la jeunesse citoyenne & l'appui de l'UNFPA"
+            val heroCategory = orgMap["home_hero_category"] ?: "Reboisement"
+            val heroImage = orgMap["home_hero_image"] ?: "img_hero_reforestation"
+            val heroProgressLabel = orgMap["home_hero_progress_label"] ?: "12 500 / 25 000 Arbres plantés"
+            val heroProgressRatio = (orgMap["home_hero_progress_percent"]?.toFloatOrNull() ?: 50f) / 100f
+
             Spacer(modifier = Modifier.height(4.dp))
             SpotlightHeroCard(
-                title = "Grande Campagne : 25 000 Arbres pour le Climat",
-                subtitle = "Avec la jeunesse citoyenne & l'appui de l'UNFPA",
-                category = "Reboisement",
-                imageName = "img_hero_reforestation",
-                progress = 0.50f,
-                progressLabel = "12 500 / 25 000 Arbres plantés",
+                title = heroTitle,
+                subtitle = heroSubtitle,
+                category = heroCategory,
+                imageName = heroImage,
+                progress = heroProgressRatio.coerceIn(0f, 1f),
+                progressLabel = heroProgressLabel,
                 onPlayActionClick = {
                     viewModel.navigateTo(AppScreen.ACTIONS)
                 }
@@ -543,6 +535,11 @@ fun HomeScreen(
         // 10. Facebook Community Connect Card
         item {
             val context = LocalContext.current
+            val fbTitle = orgMap["home_fb_title"] ?: "Communauté Facebook AIL4C"
+            val fbSubtitle = orgMap["home_fb_subtitle"] ?: "Suivez nos directs & actions citoyennes"
+            val fbDesc = orgMap["home_fb_desc"] ?: "Rejoignez plus de 15 000 sympathisants et suivez au quotidien nos opérations de salubrité et nos reboisements avec l'UNFPA."
+            val fbUrl = orgMap["org_facebook_url"] ?: "https://www.facebook.com/share/1GvChYFAMY/"
+
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 shape = RoundedCornerShape(22.dp),
@@ -566,13 +563,13 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Communauté Facebook AIL4C",
+                                text = fbTitle,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1877F2)
                             )
                             Text(
-                                text = "Suivez nos directs & actions citoyennes",
+                                text = fbSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -581,7 +578,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Rejoignez plus de 15 000 sympathisants et suivez au quotidien nos opérations de salubrité et nos reboisements avec l'UNFPA.",
+                        text = fbDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -594,10 +591,10 @@ fun HomeScreen(
                         Button(
                             onClick = {
                                 try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.facebook.com/share/1GvChYFAMY/"))
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fbUrl))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    viewModel.showToast("Lien Facebook : https://www.facebook.com/share/1GvChYFAMY/")
+                                    viewModel.showToast("Lien Facebook : $fbUrl")
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2)),
@@ -611,7 +608,7 @@ fun HomeScreen(
                             onClick = {
                                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, "Suivez l'ONG AIL4C sur Facebook : https://www.facebook.com/share/1GvChYFAMY/")
+                                    putExtra(Intent.EXTRA_TEXT, "Suivez l'ONG AIL4C sur Facebook : $fbUrl")
                                 }
                                 context.startActivity(Intent.createChooser(shareIntent, "Partager la page AIL4C"))
                             },
@@ -639,6 +636,9 @@ fun HomeScreen(
                 val presidentName = orgMap["org_president"] ?: "SENIN Tchoumou Esdras Gemiel"
                 val founderName = orgMap["org_founder"] ?: "Aka Koffi Ezéchiel"
                 val phone1Number = orgMap["org_phone_1"] ?: "+225 07 89 71 02 89"
+                val quoteText = orgMap["home_president_quote"] ?: "« Notre combat est double : redonner vie à nos forêts ivoiriennes et offrir à chaque jeune une qualification et un travail digne au service de notre environnement. »"
+                val quoteAuthor = orgMap["home_president_quote_author"] ?: "— Mot de la Présidence de l'ONG AIL4C"
+                val quoteImage = orgMap["org_president_image"] ?: "img_founder_portrait"
 
                 Column(modifier = Modifier.padding(18.dp)) {
                     // President & Founder Header
@@ -647,7 +647,7 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ResolveImage(
-                            imageName = "img_founder_portrait",
+                            imageName = quoteImage,
                             contentDescription = "$presidentName - Président Actuel AIL4C",
                             modifier = Modifier
                                 .size(56.dp)
@@ -677,13 +677,13 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "« Notre combat est double : redonner vie à nos forêts ivoiriennes et offrir à chaque jeune une qualification et un travail digne au service de notre environnement. »",
+                        text = quoteText,
                         style = MaterialTheme.typography.bodyMedium,
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "— Mot de la Présidence de l'ONG AIL4C",
+                        text = quoteAuthor,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = AilEmeraldDark,

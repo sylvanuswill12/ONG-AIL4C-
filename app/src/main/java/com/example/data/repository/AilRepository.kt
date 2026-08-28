@@ -29,8 +29,9 @@ class AilRepository(
     private val dao: AilDao,
     context: Context? = null
 ) {
+    private val appContext: Context? = context?.applicationContext
     private val repoScope = CoroutineScope(Dispatchers.IO)
-    private val syncEngine: CloudSyncEngine? = context?.let { CloudSyncEngine(it, dao, repoScope) }
+    private val syncEngine: CloudSyncEngine? = appContext?.let { CloudSyncEngine(it, dao, repoScope) }
 
     val cloudSyncStatus: StateFlow<CloudSyncStatus>? = syncEngine?.syncStatus
 
@@ -139,11 +140,12 @@ class AilRepository(
             it.messageText to it.isFromUser
         } ?: emptyList()
 
-        // Call Gemini / smart local assistant personalized with user name
+        // Call Gemini connected AI engine personalized with user name
         val aiResponseText = GeminiService.generateAiResponse(
             userPrompt = userPrompt,
             userName = userName,
-            recentHistory = recentHistory
+            recentHistory = recentHistory,
+            context = appContext
         )
 
         // Save AI response to database
@@ -164,7 +166,7 @@ class AilRepository(
         val nameGreeting = if (!currentUser?.fullName.isNullOrBlank()) " ${currentUser?.fullName}" else ""
         dao.insertAiMessage(
             AiChatMessageEntity(
-                messageText = "🌿 Bonjour$nameGreeting et bienvenue sur l'application de l'ONG AIL4C ! Je suis AWA, votre Éco-Assistante IA dédiée à la lutte contre le réchauffement climatique et l'insertion des jeunes. Comment puis-je vous accompagner aujourd'hui ?",
+                messageText = "🌿 Bonjour$nameGreeting et bienvenue sur l'application de l'ONG AIL4C ! Je suis ÉcoBot IA, votre assistant intelligent et connecté à Internet. Je construis des réponses précises et sur-mesure à toutes vos questions sur le climat, l'agroforesterie, les formations et l'ONG AIL4C. Comment puis-je vous aider aujourd'hui ?",
                 isFromUser = false,
                 timestamp = System.currentTimeMillis()
             )
@@ -419,7 +421,7 @@ class AilRepository(
         if (existingAiMsgs.isNullOrEmpty()) {
             dao.insertAiMessage(
                 AiChatMessageEntity(
-                    messageText = "🌿 Bonjour et bienvenue sur l'application officielle de l'AIL4C ! Je suis AWA, votre Éco-Assistante IA dédiée à la lutte contre le réchauffement climatique et l'insertion des jeunes. Comment puis-je vous accompagner aujourd'hui ?",
+                    messageText = "🌿 Bonjour et bienvenue sur l'application officielle de l'AIL4C ! Je suis ÉcoBot IA, votre assistant intelligent et connecté à Internet. Je construis des réponses précises et sur-mesure à toutes vos questions sur le climat, l'agroforesterie, les formations et l'ONG AIL4C. Comment puis-je vous aider aujourd'hui ?",
                     isFromUser = false,
                     timestamp = System.currentTimeMillis()
                 )

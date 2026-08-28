@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -7,6 +10,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,13 +38,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -71,6 +76,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -80,10 +86,14 @@ import com.example.data.model.AiChatMessageEntity
 import com.example.ui.theme.AilEmerald
 import com.example.ui.theme.AilEmeraldDark
 import com.example.ui.theme.AilEmeraldLight
+import com.example.ui.theme.AilForestDark
+import com.example.ui.theme.AilForestGreen
 import com.example.ui.theme.AilGold
 import com.example.ui.theme.AilLeafGreen
 import com.example.ui.theme.AilMintBackground
-import com.example.ui.theme.AilSoftCardBg
+import com.example.ui.theme.AilMintDarkGreen
+import com.example.ui.theme.AilMintLight
+import com.example.ui.theme.AilMintPillBg
 import com.example.ui.viewmodel.AilViewModel
 import com.example.ui.viewmodel.AppScreen
 import kotlinx.coroutines.launch
@@ -98,6 +108,7 @@ fun AiAssistantScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val messages by viewModel.allAiMessages.collectAsState()
     val isThinking by viewModel.isAiThinking.collectAsState()
     var inputText by remember { mutableStateOf("") }
@@ -112,12 +123,12 @@ fun AiAssistantScreen(
     }
 
     val quickPrompts = listOf(
-        "🌿 Qui est l'ONG AIL4C ?",
-        "🌳 Participer au reboisement",
-        "🎓 Formations gratuites métiers verts",
-        "📍 Adresse du siège de l'ONG",
-        "💚 Comment faire un don Mobile Money ?",
-        "🤝 Devenir bénévole éco-citoyen"
+        "🌱 Comment fabriquer du compost organique ?",
+        "🌳 Quelles essences d'arbres planter en Côte d'Ivoire ?",
+        "♻️ Comment recycler le plastique en pavés ?",
+        "🎓 Comment postuler aux formations gratuites ?",
+        "☀️ Quel dimensionnement pour une pompe solaire ?",
+        "💚 Comment soutenir l'ONG AIL4C par Wave ou Orange Money ?"
     )
 
     Scaffold(
@@ -133,14 +144,14 @@ fun AiAssistantScreen(
                                 .clip(CircleShape)
                                 .background(
                                     Brush.linearGradient(
-                                        listOf(AilEmerald, AilLeafGreen)
+                                        listOf(AilEmerald, AilForestDark)
                                     )
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "IA AWA",
+                                contentDescription = "ÉcoBot IA",
                                 tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -149,30 +160,41 @@ fun AiAssistantScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "AWA • Éco-Assistante",
+                                    text = "ÉcoBot IA",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.ExtraBold,
                                     color = Color.Black
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
                                     color = AilEmerald.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(4.dp)
+                                    shape = RoundedCornerShape(6.dp)
                                 ) {
-                                    Text(
-                                        text = "IA AIL4C",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = AilEmeraldDark,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                        fontSize = 9.sp
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Wifi,
+                                            contentDescription = null,
+                                            tint = AilEmeraldDark,
+                                            modifier = Modifier.size(10.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "BOT CONNECTÉ",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AilEmeraldDark,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 9.sp
+                                        )
+                                    }
                                 }
                             }
                             Text(
-                                text = if (isThinking) "En train de vous répondre..." else "En ligne • Côte d'Ivoire",
+                                text = if (isThinking) "Recherche et synthèse en cours..." else "Connecté en direct • Recherche & Analyse",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (isThinking) AilEmeraldDark else Color.Gray,
+                                color = if (isThinking) AilEmeraldDark else Color.DarkGray,
                                 fontSize = 11.sp
                             )
                         }
@@ -248,7 +270,7 @@ fun AiAssistantScreen(
                         OutlinedTextField(
                             value = inputText,
                             onValueChange = { inputText = it },
-                            placeholder = { Text("Posez votre question à AWA...") },
+                            placeholder = { Text("Posez votre question à ÉcoBot...") },
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("ai_input_field"),
@@ -332,6 +354,12 @@ fun AiAssistantScreen(
                             "PROJECTS" -> viewModel.navigateTo(AppScreen.PROJECTS)
                             "NEWS" -> viewModel.navigateTo(AppScreen.NEWS)
                         }
+                    },
+                    onCopyMessage = { text ->
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = ClipData.newPlainText("ÉcoBot Réponse", text)
+                        clipboard.setPrimaryClip(clip)
+                        viewModel.showToast("Réponse copiée dans le presse-papier !")
                     }
                 )
             }
@@ -379,13 +407,13 @@ fun WelcomeAiHeaderCard(
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
-                                listOf(AilEmerald, AilLeafGreen)
+                                listOf(AilEmerald, AilForestDark)
                             )
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Eco,
+                        imageVector = Icons.Default.AutoAwesome,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(26.dp)
@@ -396,15 +424,16 @@ fun WelcomeAiHeaderCard(
 
                 Column {
                     Text(
-                        text = "Bienvenue sur l'IA AWA !",
+                        text = "ÉcoBot IA • Recherche & Analyse",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color.Black
                     )
                     Text(
-                        text = "Votre guide intelligent pour le climat, l'écologie & la jeunesse",
+                        text = "Intelligence Artificielle connectée en direct",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = AilEmeraldDark,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -414,17 +443,14 @@ fun WelcomeAiHeaderCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "💡 **Exemples de demandes à tester :**",
+                text = "⚡ **Fonctionnement 100% Connecté & Intelligent :**",
                 style = MaterialTheme.typography.bodySmall,
                 color = AilEmeraldDark,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "• « Explique-moi les bienfaits de l'agro-écologie »\n" +
-                        "• « Comment puis-ci m'inscrire au prochain reboisement ? »\n" +
-                        "• « Quelles formations de recyclage plastique sont disponibles ? »\n" +
-                        "• « Quels sont les numéros pour faire un don Wave ou Orange ? »",
+                text = "ÉcoBot ne propose aucune réponse toute faite. Chaque question est analysée et documentée en direct via Internet pour vous fournir des solutions techniques précises, des fiches pratiques et des conseils sur-mesure sur l'écologie, l'agroforesterie, les formations et l'ONG AIL4C.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.DarkGray,
                 lineHeight = 18.sp
@@ -436,7 +462,8 @@ fun WelcomeAiHeaderCard(
 @Composable
 fun ChatMessageBubble(
     message: AiChatMessageEntity,
-    onActionClick: (String) -> Unit
+    onActionClick: (String) -> Unit,
+    onCopyMessage: (String) -> Unit
 ) {
     val timeFormat = SimpleDateFormat("HH:mm", Locale.FRENCH)
     val timeStr = timeFormat.format(Date(message.timestamp))
@@ -486,11 +513,11 @@ fun ChatMessageBubble(
         ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
-                            listOf(AilEmerald, AilLeafGreen)
+                            listOf(AilEmerald, AilForestDark)
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -499,14 +526,14 @@ fun ChatMessageBubble(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
             Column(
-                modifier = Modifier.widthIn(max = 310.dp)
+                modifier = Modifier.widthIn(max = 320.dp)
             ) {
                 Card(
                     shape = RoundedCornerShape(
@@ -516,14 +543,49 @@ fun ChatMessageBubble(
                         bottomEnd = 18.dp
                     ),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(1.dp)
+                    elevation = CardDefaults.cardElevation(1.5.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AilMintLight.copy(alpha = 0.8f))
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                color = AilMintPillBg,
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = "ÉcoBot IA",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AilEmeraldDark,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { onCopyMessage(message.messageText) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copier la réponse",
+                                    tint = Color.Gray,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
                         Text(
                             text = message.messageText,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Black,
-                            lineHeight = 20.sp
+                            color = Color(0xFF1E293B),
+                            lineHeight = 21.sp
                         )
 
                         // If the message contains keywords, show shortcut pills
@@ -592,7 +654,7 @@ fun ChatMessageBubble(
                 }
 
                 Text(
-                    text = "AWA • $timeStr",
+                    text = "ÉcoBot • $timeStr",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Gray,
                     fontSize = 10.sp,
@@ -612,16 +674,20 @@ fun AiThinkingBubble() {
     ) {
         Box(
             modifier = Modifier
-                .size(32.dp)
+                .size(34.dp)
                 .clip(CircleShape)
-                .background(AilEmerald),
+                .background(
+                    Brush.linearGradient(
+                        listOf(AilEmerald, AilForestDark)
+                    )
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
 
@@ -630,7 +696,8 @@ fun AiThinkingBubble() {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.White,
-            shadowElevation = 1.dp
+            shadowElevation = 1.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, AilMintLight)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -643,10 +710,10 @@ fun AiThinkingBubble() {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "AWA réfléchit à votre réponse...",
+                    text = "ÉcoBot recherche et construit votre réponse...",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    color = AilEmeraldDark,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
