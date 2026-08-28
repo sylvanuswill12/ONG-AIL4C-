@@ -2,50 +2,54 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary Modern Mint & Emerald Palette (from design reference)
-val AilForestDark = Color(0xFF0F2417)
-val AilForestGreen = Color(0xFF059669) // Vibrant emerald
-val AilEmerald = Color(0xFF10B981) // Crisp mint emerald primary
-val AilMint = Color(0xFF10B981) // Modern bright mint
-val AilMintLight = Color(0xFF6EE7B7)
-val AilMintBright = Color(0xFF34D399)
-val AilMintDarkGreen = Color(0xFF047857)
-val AilMintPillBg = Color(0xFFE8F8F0) // Soft mint chip / container
-val AilMintPillBgDark = Color(0xFF133E2B)
+// Primary Lively Palette: Vibrant Orange, Crisp Pure White, and Fresh Touch of Green
+val AilOrangePrimary = Color(0xFFFF6D00) // Vibrant, energetic primary orange
+val AilOrangeDark = Color(0xFFE65100) // Deep warm orange for high contrast text
+val AilOrangeLight = Color(0xFFFFE8D6) // Soft warm orange/peach container
+val AilOrangeBright = Color(0xFFFF7D1A) // Radiant highlight orange
+val AilOrangePillBg = Color(0xFFFFF3E0) // Gentle orange chip background
+
+// Touch of Fresh Green (Eco & Nature touch)
+val AilGreenAccent = Color(0xFF16A34A) // Crisp lively leaf green
+val AilGreenLight = Color(0xFFDCFCE7) // Soft eco green pill
+val AilGreenDark = Color(0xFF15803D) // Deep emerald green for badges
+
+// Neutral, Pure White & Surface Tones
+val AilBackgroundLight = Color(0xFFFAF8F5) // Luminous warm white canvas
+val AilSurfaceLight = Color(0xFFFFFFFF) // Crisp pure white cards
+val AilSurfaceVariantLight = Color(0xFFF7F4F0) // Subtle warm input & pill background
+val AilOnSurfaceLight = Color(0xFF1E293B) // High contrast deep charcoal
+val AilOnSurfaceMuted = Color(0xFF64748B) // Clean muted secondary text
+val AilOutlineLight = Color(0xFFF1EBE4) // Subtle warm border
 
 // Accent Warm & Highlights
 val AilAmber = Color(0xFFF59E0B)
 val AilTerracotta = Color(0xFFEA580C)
 val AilGold = Color(0xFFFBBF24)
 val AilSoftYellow = Color(0xFFFEF3C7)
-val AilBlueAccent = Color(0xFF3B82F6)
-val AilPurpleAccent = Color(0xFF8B5CF6)
+val AilBlueAccent = Color(0xFF2563EB)
+val AilPurpleAccent = Color(0xFF7C3AED)
 
-// Neutral & Surface Tones (Light Modern iOS)
-val AilBackgroundLight = Color(0xFFF8FAF9) // Fresh clean light canvas
-val AilSurfaceLight = Color(0xFFFFFFFF) // Crisp pure white cards
-val AilSurfaceVariantLight = Color(0xFFF1F5F3) // Subtle input & search background
-val AilOnSurfaceLight = Color(0xFF111827) // High contrast deep slate
-val AilOnSurfaceMuted = Color(0xFF6B7280) // Modern muted secondary text
-val AilOutlineLight = Color(0xFFE5E7EB) // Subtle light border
+// Mapped Aliases for Screens & Components
+val AilForestDark = Color(0xFFE65100) // Mapped to Deep Warm Orange
+val AilForestGreen = Color(0xFFFF6D00) // Mapped to Vibrant Primary Orange
+val AilEmerald = Color(0xFFFF6D00) // Mapped to Primary Orange
+val AilMint = Color(0xFFFF6D00)
+val AilMintLight = Color(0xFFFFE8D6)
+val AilMintBright = Color(0xFFFF7D1A)
+val AilMintDarkGreen = Color(0xFFE65100)
+val AilMintPillBg = Color(0xFFFFF3E0)
+val AilMintPillBgDark = Color(0xFFFFE0B2)
 
-// Neutral & Surface Tones (Dark Modern iOS)
-val AilBackgroundDark = Color(0xFF0B1117)
-val AilSurfaceDark = Color(0xFF131D24)
-val AilSurfaceVariantDark = Color(0xFF1C2B33)
-val AilOnSurfaceDark = Color(0xFFF3F4F6)
-val AilOutlineDark = Color(0xFF263842)
-
-// Semantic Badges & Highlights
-val AilTagReforest = Color(0xFF10B981)
-val AilTagWaste = Color(0xFF0284C7)
-val AilTagTraining = Color(0xFF7C3AED)
-val AilTagAwareness = Color(0xFFF59E0B)
-
-// Color aliases for Assistant and Auth screens
-val AilEmeraldDark = Color(0xFF047857)
-val AilEmeraldLight = Color(0xFFE8F8F0)
-val AilLeafGreen = Color(0xFF059669)
-val AilMintBackground = Color(0xFFF8FAF9)
+// Assistant and Screen Color Aliases
+val AilEmeraldDark = Color(0xFFE65100)
+val AilEmeraldLight = Color(0xFFFFE8D6)
+val AilLeafGreen = Color(0xFF16A34A) // Fresh touch of green
+val AilMintBackground = Color(0xFFFAF8F5) // Clean warm white canvas
 val AilSoftCardBg = Color(0xFFFFFFFF)
 
+// Semantic Badges & Highlights
+val AilTagReforest = Color(0xFF16A34A) // Green touch
+val AilTagWaste = Color(0xFFFF6D00) // Orange touch
+val AilTagTraining = Color(0xFFEA580C)
+val AilTagAwareness = Color(0xFFF59E0B)

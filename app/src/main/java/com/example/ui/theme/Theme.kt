@@ -11,38 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = AilEmerald,
+private val VibrantColorScheme = lightColorScheme(
+    primary = AilOrangePrimary,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFF163E2C),
-    onPrimaryContainer = AilMintLight,
-    secondary = AilAmber,
-    onSecondary = Color.Black,
-    secondaryContainer = Color(0xFF3B2713),
-    onSecondaryContainer = AilSoftYellow,
-    tertiary = AilBlueAccent,
-    onTertiary = Color.White,
-    background = AilBackgroundDark,
-    onBackground = AilOnSurfaceDark,
-    surface = AilSurfaceDark,
-    onSurface = AilOnSurfaceDark,
-    surfaceVariant = AilSurfaceVariantDark,
-    onSurfaceVariant = Color(0xFF94A3B8),
-    outline = AilOutlineDark,
-    error = Color(0xFFEF4444),
-    onError = Color.White
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = AilEmerald,
-    onPrimary = Color.White,
-    primaryContainer = AilMintPillBg,
-    onPrimaryContainer = AilMintDarkGreen,
-    secondary = AilAmber,
+    primaryContainer = AilOrangePillBg,
+    onPrimaryContainer = AilOrangeDark,
+    secondary = AilGreenAccent, // Touch of eco green
     onSecondary = Color.White,
-    secondaryContainer = AilSoftYellow,
-    onSecondaryContainer = Color(0xFF92400E),
-    tertiary = AilBlueAccent,
+    secondaryContainer = AilGreenLight,
+    onSecondaryContainer = AilGreenDark,
+    tertiary = AilAmber,
     onTertiary = Color.White,
     background = AilBackgroundLight,
     onBackground = AilOnSurfaceLight,
@@ -58,20 +36,12 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun MyApplicationTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Keep branded eco identity
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
+    // Keep vibrant, radiant, white & orange palette with green accents
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = VibrantColorScheme,
         typography = Typography,
         content = content
     )
