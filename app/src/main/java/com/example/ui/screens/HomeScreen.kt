@@ -80,6 +80,7 @@ import com.example.data.model.EcoActionEntity
 import com.example.data.model.NewsArticleEntity
 import com.example.ui.components.CategoryPillList
 import com.example.ui.components.EcoCategoryBadge
+import com.example.ui.components.EcoCitizenActivityCalendarCard
 import com.example.ui.components.ImpactMetricCard
 import com.example.ui.components.MentorProfileCard
 import com.example.ui.components.ModernHorizontalCard
@@ -111,6 +112,8 @@ fun HomeScreen(
     val allNews by viewModel.publishedNews.collectAsStateWithLifecycle()
     val allActions by viewModel.allActions.collectAsStateWithLifecycle()
     val allProjects by viewModel.allProjects.collectAsStateWithLifecycle()
+    val allMentorsTrainers by viewModel.allMentorsTrainers.collectAsStateWithLifecycle()
+    val allEcoActivities by viewModel.allEcoActivities.collectAsStateWithLifecycle()
     val userProfile by viewModel.currentUserProfile.collectAsStateWithLifecycle()
     val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
 
@@ -464,13 +467,16 @@ fun HomeScreen(
             }
         }
 
-        // 4. Weekly Eco-Streak Widget
+        // 4. Calendrier d'Activité Éco-Citoyenne (Synchronisé avec le Profil et détection automatique)
         item {
-            WeeklyStreakWidget(
-                streakDays = 5,
-                treesCount = 12,
-                actionsCount = 4
-            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                EcoCitizenActivityCalendarCard(
+                    allActivities = allEcoActivities,
+                    onOpenQuizClick = { viewModel.navigateTo(AppScreen.QUIZ) },
+                    onViewProfileHistoryClick = { viewModel.navigateTo(AppScreen.PROFILE) }
+                )
+            }
         }
 
         // 5. Recommended Actions & Projects (Horizontal Carousel)
@@ -534,34 +540,29 @@ fun HomeScreen(
             }
         }
 
-        // 7. Mentors & Formateurs AIL4C Carousel
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionHeader(
-                title = orgMap["home_mentors_title"] ?: "Mentors & Formateurs AIL4C",
-                subtitle = "Des experts mobilisés pour former la jeunesse",
-                actionLabel = "Formations",
-                onActionClick = { viewModel.navigateTo(AppScreen.TRAININGS) }
-            )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                val trainers = listOf(
-                    Triple("SENIN Tchoumou Esdras Gemiel", "Président Actuel", "Gouvernance & Climat"),
-                    Triple("Aka Koffi Ezéchiel", "Président-Fondateur", "Agroforesterie & Vision"),
-                    Triple("Kouamé Jean-Marc", "Formateur Senior", "Recyclage & Compost"),
-                    Triple("Konan Adjoua Célestine", "Coordonnatrice Jeunesse", "Éco-Citoyenneté"),
-                    Triple("Bamba Souleymane", "Ingénieur Écologue", "Restauration Sols")
+        // 7. Mentors & Formateurs AIL4C Carousel (Ajoutés par l'Admin)
+        if (allMentorsTrainers.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                SectionHeader(
+                    title = orgMap["home_mentors_title"] ?: "Mentors & Formateurs AIL4C",
+                    subtitle = "Des experts mobilisés pour former la jeunesse",
+                    actionLabel = "Formations",
+                    onActionClick = { viewModel.navigateTo(AppScreen.TRAININGS) }
                 )
-                items(trainers) { (name, role, specialty) ->
-                    MentorProfileCard(
-                        name = name,
-                        role = role,
-                        imageName = "img_youth_training",
-                        specialty = specialty,
-                        onProfileClick = { viewModel.navigateTo(AppScreen.TRAININGS) }
-                    )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(allMentorsTrainers) { mentor ->
+                        MentorProfileCard(
+                            name = mentor.fullName,
+                            role = mentor.roleTitle,
+                            imageName = mentor.photoResName.ifBlank { "avatar_user" },
+                            specialty = mentor.specialty.ifBlank { mentor.category },
+                            onProfileClick = { viewModel.navigateTo(AppScreen.TRAININGS) }
+                        )
+                    }
                 }
             }
         }

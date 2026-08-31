@@ -663,6 +663,13 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteAllMentorsTrainers() {
+        viewModelScope.launch {
+            repository.deleteAllMentorsTrainers()
+            showToast("Tous les mentors ont été effacés.")
+        }
+    }
+
     fun updateVolunteerStatus(reg: VolunteerRegistrationEntity, newStatus: String) {
         viewModelScope.launch {
             repository.updateVolunteerStatus(reg, newStatus)

@@ -103,7 +103,15 @@ import com.example.ui.theme.AilTerracotta
 
 import coil.compose.AsyncImage
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayCircle
+import com.example.data.model.EcoActivityRecordEntity
+import com.example.ui.theme.AilEmeraldDark
 
 @Composable
 fun ResolveImage(
@@ -1514,6 +1522,291 @@ fun AdminLoginDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen)
                     ) {
                         Text("Déverrouiller", color = Color.White)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EcoCitizenActivityCalendarCard(
+    allActivities: List<EcoActivityRecordEntity>,
+    onOpenQuizClick: (() -> Unit)? = null,
+    onViewProfileHistoryClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("home_eco_citizen_calendar_card"),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE8F5E9)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = AilEmeraldDark,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Calendrier d'Activité Éco-Citoyenne",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
+                        )
+                        val currentMonthYearStr = remember {
+                            SimpleDateFormat("MMMM yyyy", Locale.FRENCH).format(Date()).replaceFirstChar { it.uppercase() }
+                        }
+                        Text(
+                            text = "$currentMonthYearStr • Détection auto (+5 pts/jour)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF64748B),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFF10B981).copy(alpha = 0.15f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF047857),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Actif",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF047857),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Calendar Calculation
+            val cal = remember { Calendar.getInstance() }
+            val currentDayOfMonth = remember { cal.get(Calendar.DAY_OF_MONTH) }
+            val currentMonth = remember { cal.get(Calendar.MONTH) }
+            val currentYear = remember { cal.get(Calendar.YEAR) }
+            val maxDaysInMonth = remember { cal.getActualMaximum(Calendar.DAY_OF_MONTH) }
+
+            // First day of week offset (Monday = 0, Sunday = 6)
+            val firstDayOffset = remember {
+                val tempCal = Calendar.getInstance()
+                tempCal.set(Calendar.DAY_OF_MONTH, 1)
+                val dayOfWeek = tempCal.get(Calendar.DAY_OF_WEEK)
+                (dayOfWeek + 5) % 7
+            }
+
+            // Map days of month to activities
+            val daysWithActivityMap = remember(allActivities, currentMonth, currentYear) {
+                val map = mutableMapOf<Int, MutableList<EcoActivityRecordEntity>>()
+                val activityCal = Calendar.getInstance()
+                allActivities.forEach { act ->
+                    activityCal.timeInMillis = act.completedTimestamp
+                    if (activityCal.get(Calendar.MONTH) == currentMonth &&
+                        activityCal.get(Calendar.YEAR) == currentYear
+                    ) {
+                        val day = activityCal.get(Calendar.DAY_OF_MONTH)
+                        map.getOrPut(day) { mutableListOf() }.add(act)
+                    }
+                }
+                map
+            }
+
+            // Weekdays Header Row
+            val weekDays = listOf("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                weekDays.forEach { dayName ->
+                    Text(
+                        text = dayName,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Calendar Days Grid (Rows of 7 days)
+            val totalSlots = firstDayOffset + maxDaysInMonth
+            val rowsCount = (totalSlots + 6) / 7
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (row in 0 until rowsCount) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        for (col in 0 until 7) {
+                            val slotIndex = row * 7 + col
+                            val dayNumber = slotIndex - firstDayOffset + 1
+
+                            if (dayNumber in 1..maxDaysInMonth) {
+                                val isToday = dayNumber == currentDayOfMonth
+                                val dayActivities = daysWithActivityMap[dayNumber] ?: emptyList()
+                                val isCheckedGreen = dayActivities.isNotEmpty() || isToday
+                                val totalDayPoints = dayActivities.sumOf { it.pointsAwarded }.let { if (it == 0 && isToday) 5 else it }
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            when {
+                                                isCheckedGreen -> Color(0xFFD1FAE5)
+                                                else -> Color(0xFFF1F5F9)
+                                            }
+                                        )
+                                        .then(
+                                            if (isToday) Modifier.border(1.5.dp, Color(0xFF047857), RoundedCornerShape(8.dp))
+                                            else Modifier
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(
+                                                text = dayNumber.toString(),
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = if (isCheckedGreen || isToday) FontWeight.ExtraBold else FontWeight.Normal
+                                                ),
+                                                color = if (isCheckedGreen) Color(0xFF065F46) else Color(0xFF475569),
+                                                fontSize = 12.sp
+                                            )
+                                            if (isCheckedGreen) {
+                                                Spacer(modifier = Modifier.width(2.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.CheckCircle,
+                                                    contentDescription = "Coché vert",
+                                                    tint = Color(0xFF10B981),
+                                                    modifier = Modifier.size(10.dp)
+                                                )
+                                            }
+                                        }
+                                        if (isCheckedGreen) {
+                                            Text(
+                                                text = "+${if (totalDayPoints > 0) totalDayPoints else 5}",
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = Color(0xFF047857),
+                                                fontSize = 9.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Calendar Legend & Rules
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF0FDF4),
+                border = BorderStroke(1.dp, Color(0xFF86EFAC)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF10B981),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Règles d'attribution automatique des points :",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF064E3B)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "• 🟢 Connexion quotidienne : jour coché en vert (+5 pts)\n• 🎯 Quiz Climat du jour : 1 question (+10 pts)\n• 🌿 Participation Action Terrain (Événements) : (+10 pts)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF047857),
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+
+            if (onOpenQuizClick != null || onViewProfileHistoryClick != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (onOpenQuizClick != null) {
+                        Button(
+                            onClick = onOpenQuizClick,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen)
+                        ) {
+                            Text("Quiz du jour (+10 pts)", fontSize = 12.sp, color = Color.White)
+                        }
+                    }
+                    if (onViewProfileHistoryClick != null) {
+                        OutlinedButton(
+                            onClick = onViewProfileHistoryClick,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AilForestGreen)
+                        ) {
+                            Text("Voir l'historique", fontSize = 12.sp)
+                        }
                     }
                 }
             }

@@ -499,6 +499,7 @@ class AilRepository(
         dao.deleteAllActions()
         dao.deleteAllProjects()
         dao.deleteAllTrainings()
+        dao.deleteAllMentorsTrainers()
         dao.deleteAllMediaTestimonials()
         dao.deleteAllMetrics()
     }
@@ -509,8 +510,13 @@ class AilRepository(
         dao.deleteAllActions()
         dao.deleteAllProjects()
         dao.deleteAllTrainings()
+        dao.deleteAllMentorsTrainers()
         dao.deleteAllMediaTestimonials()
         dao.deleteAllMetrics()
+    }
+
+    suspend fun deleteAllMentorsTrainers() = withContext(Dispatchers.IO) {
+        dao.deleteAllMentorsTrainers()
     }
 
     suspend fun ensureDefaultDataSeeded() = withContext(Dispatchers.IO) {
@@ -521,9 +527,17 @@ class AilRepository(
             dao.deleteAllActions()
             dao.deleteAllProjects()
             dao.deleteAllTrainings()
+            dao.deleteAllMentorsTrainers()
             dao.deleteAllMediaTestimonials()
             dao.deleteAllMetrics()
             dao.setOrgInfo(OrgInfoEntity("sample_content_cleared_v1", "true"))
+        }
+
+        // Clean hardcoded mentors as specifically requested by the user
+        val cleanedMentorsFlag = dao.getOrgInfoValue("mentors_cleared_user_request_v3")
+        if (cleanedMentorsFlag == null) {
+            dao.deleteAllMentorsTrainers()
+            dao.setOrgInfo(OrgInfoEntity("mentors_cleared_user_request_v3", "true"))
         }
 
         // 1. Official Org Info Matching Official Records
@@ -578,70 +592,7 @@ class AilRepository(
             )
         }
 
-        // 3. Seed Initial Mentors & Formateurs if empty
-        val existingMentors = dao.getAllMentorsTrainers().firstOrNull()
-        if (existingMentors.isNullOrEmpty()) {
-            dao.insertAllMentorsTrainers(
-                listOf(
-                    MentorTrainerEntity(
-                        fullName = "Dr. KOUAMÉ Jean-Baptiste",
-                        roleTitle = "Formateur Référent Agroforesterie & Sols",
-                        category = "Formateur",
-                        specialty = "Agro-écologie, Pépinières durables & Restauration des sols dégradés",
-                        bio = "Docteur en agronomie tropicale avec 12 années d'expérience en recherche et encadrement rural. Forme les jeunes aux techniques de pépinières et d'association culturale sans intrants chimiques.",
-                        experienceYears = 12,
-                        phone = "+225 07 89 71 02 89",
-                        email = "ongail4c@gmail.com",
-                        location = "Bouaké (Pépinière Centrale)",
-                        photoResName = "avatar_user",
-                        isAvailableForMentoring = true,
-                        displayOrder = 1
-                    ),
-                    MentorTrainerEntity(
-                        fullName = "Mme TOURE Aminata",
-                        roleTitle = "Formatrice & Mentore Recyclage Plastique",
-                        category = "Formatrice & Mentore",
-                        specialty = "Éco-pavés, Tri sélectif & Valorisation des déchets plastiques urbains",
-                        bio = "Experte en économie circulaire et artisane écologique engagée. Accompagne les coopératives de femmes et de jeunes dans la production de pavés écologiques haute résistance.",
-                        experienceYears = 7,
-                        phone = "+225 07 89 97 63 23",
-                        email = "ongail4c@gmail.com",
-                        location = "Bouaké",
-                        photoResName = "avatar_user",
-                        isAvailableForMentoring = true,
-                        displayOrder = 2
-                    ),
-                    MentorTrainerEntity(
-                        fullName = "Ing. KOFFI Serge Emmanuel",
-                        roleTitle = "Formateur Solaire & Énergies Renouvelables",
-                        category = "Formateur",
-                        specialty = "Photovoltaïque, Pompage solaire agricole & Maintenance d'onduleurs",
-                        bio = "Ingénieur en électromécanique et énergies renouvelables. Conçoit et supervise les formations pratiques d'installation de mini-centrales solaires et systèmes d'irrigation propres.",
-                        experienceYears = 8,
-                        phone = "+225 07 89 71 02 89",
-                        email = "ongail4c@gmail.com",
-                        location = "Bouaké / Abidjan",
-                        photoResName = "avatar_user",
-                        isAvailableForMentoring = true,
-                        displayOrder = 3
-                    ),
-                    MentorTrainerEntity(
-                        fullName = "M. TRAORÉ Souleymane",
-                        roleTitle = "Mentor Climat & Responsable Éco-Bénévoles",
-                        category = "Mentor",
-                        specialty = "Sensibilisation citoyenne, Reboisement massif & Leadership vert",
-                        bio = "Pionnier du volontariat environnemental en Côte d'Ivoire. Coordonne les grandes campagnes de reboisement et conseille les jeunes porteurs d'éco-projets vers l'autonomie.",
-                        experienceYears = 9,
-                        phone = "+225 07 89 97 63 23",
-                        email = "ongail4c@gmail.com",
-                        location = "Bouaké & Région du Gbêkê",
-                        photoResName = "avatar_user",
-                        isAvailableForMentoring = true,
-                        displayOrder = 4
-                    )
-                )
-            )
-        }
+        // 3. Mentors & Formateurs are created strictly by the Admin
 
         // 4. Seed Initial Logged User if not existing
         val existingUser = dao.getCurrentUser()

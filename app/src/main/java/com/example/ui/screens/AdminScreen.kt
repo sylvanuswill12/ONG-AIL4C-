@@ -831,22 +831,82 @@ fun AdminScreen(
 
             AdminTab.TRAINERS_MENTORS -> {
                 item {
-                    AdminSectionBar(
-                        title = "Gestion des Mentors & Formateurs (${allMentorsTrainers.size})",
-                        onAddClick = {
-                            editingMentor = null
-                            showMentorDialog = true
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Mentors & Formateurs (${allMentorsTrainers.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = AilForestGreen
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (allMentorsTrainers.isNotEmpty()) {
+                                OutlinedButton(
+                                    onClick = {
+                                        viewModel.deleteAllMentorsTrainers()
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC0392B))
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Tout effacer", fontSize = 11.sp)
+                                }
+                            }
+                            Button(
+                                onClick = {
+                                    editingMentor = null
+                                    showMentorDialog = true
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Ajouter", color = Color.White, fontSize = 12.sp)
+                            }
                         }
-                    )
+                    }
                 }
                 if (allMentorsTrainers.isEmpty()) {
                     item {
-                        Text(
-                            text = "Aucun mentor ou formateur configuré pour le moment.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(16.dp)
-                        )
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = AilEmerald,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Aucun mentor ou formateur enregistré.",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Cliquez sur 'Ajouter' pour enregistrer vos formateurs avec photo, nom, fonction et coordonnées.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 } else {
                     items(allMentorsTrainers) { mentor ->
