@@ -77,6 +77,10 @@ fun ProjectsScreen(
 ) {
     val allProjects by viewModel.allProjects.collectAsStateWithLifecycle()
     val selectedProject by viewModel.selectedProject.collectAsStateWithLifecycle()
+    val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
+
+    val headerTitle = orgMap["projects_header_title"] ?: "Grands Projets & Chantiers Climat"
+    val headerSubtitle = orgMap["projects_header_subtitle"] ?: "Découvrez nos programmes d'impact environnemental, reboisement et économie circulaire."
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tous") }
@@ -147,6 +151,28 @@ fun ProjectsScreen(
                 selectedCategory = selectedCategory,
                 onCategorySelected = { selectedCategory = it }
             )
+        }
+
+        if (searchQuery.isBlank() && selectedCategory == "Tous") {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = headerTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = headerSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
         if (filteredProjects.isEmpty()) {

@@ -85,6 +85,10 @@ fun ActionsScreen(
 ) {
     val allActions by viewModel.allActions.collectAsStateWithLifecycle()
     val selectedAction by viewModel.selectedAction.collectAsStateWithLifecycle()
+    val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
+
+    val headerTitle = orgMap["actions_header_title"] ?: "Mobilisations & Actions Citoyennes"
+    val headerSubtitle = orgMap["actions_header_subtitle"] ?: "Participez aux activités citoyennes de terrain pour le reboisement et la salubrité."
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tous") }
@@ -186,6 +190,28 @@ fun ActionsScreen(
                             selectedLabelColor = Color.White,
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         )
+                    )
+                }
+            }
+        }
+
+        if (searchQuery.isBlank() && selectedCategory == "Tous" && selectedStatus == "Tous") {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = headerTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = headerSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

@@ -5,15 +5,23 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.AiChatMessageEntity
 import com.example.data.model.EcoActionEntity
+import com.example.data.model.EcoActivityPreset
+import com.example.data.model.EcoActivityRecordEntity
 import com.example.data.model.ImpactMetricEntity
 import com.example.data.model.MediaTestimonialEntity
+import com.example.data.model.MentorTrainerEntity
 import com.example.data.model.NewsArticleEntity
 import com.example.data.model.OrgInfoEntity
 import com.example.data.model.ProjectEntity
+import com.example.data.model.QuizBank
+import com.example.data.model.QuizQuestion
 import com.example.data.model.TrainingApplicationEntity
 import com.example.data.model.TrainingEntity
+import com.example.data.model.UserBadgeEntity
 import com.example.data.model.UserProfileEntity
 import com.example.data.model.VolunteerRegistrationEntity
+import com.example.data.remote.AppUpdateInfo
+import com.example.data.remote.GitHubUpdateService
 import com.example.data.repository.AilRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +45,7 @@ enum class AppScreen {
     NEWS,
     MEDIA,
     AI_ASSISTANT,
+    QUIZ,
     ABOUT,
     PROFILE,
     ADMIN
@@ -82,13 +91,73 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
     private val _isAiThinking = MutableStateFlow(false)
     val isAiThinking: StateFlow<Boolean> = _isAiThinking.asStateFlow()
 
+    // GitHub App Updates State
+    private val _appUpdateInfo = MutableStateFlow<AppUpdateInfo?>(null)
+    val appUpdateInfo: StateFlow<AppUpdateInfo?> = _appUpdateInfo.asStateFlow()
+
+    private val _isCheckingUpdate = MutableStateFlow(false)
+    val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate.asStateFlow()
+
+    private val _isUpdateDismissed = MutableStateFlow(false)
+    val isUpdateDismissed: StateFlow<Boolean> = _isUpdateDismissed.asStateFlow()
+
+    private val _showUpdateModal = MutableStateFlow(false)
+    val showUpdateModal: StateFlow<Boolean> = _showUpdateModal.asStateFlow()
+
+    init {
+        // Auto-check for updates on launch
+        checkForAppUpdates(silent = true)
+        triggerDailyLoginCheck()
+        loadDailyQuizState()
+    }
+
     // Feedback Toast / Snackbar event
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage: SharedFlow<String> = _toastMessage.asSharedFlow()
 
+    // Newly Unlocked Badge for Fireworks Celebration Dialog
+    private val _newlyUnlockedBadge = MutableStateFlow<UserBadgeEntity?>(null)
+    val newlyUnlockedBadge: StateFlow<UserBadgeEntity?> = _newlyUnlockedBadge.asStateFlow()
+
+    fun dismissBadgeCelebration() {
+        val badge = _newlyUnlockedBadge.value
+        _newlyUnlockedBadge.value = null
+        if (badge != null) {
+            viewModelScope.launch {
+                repository.markBadgeCelebrationSeen(badge.badgeId)
+            }
+        }
+    }
+
+    // Daily Eco-Quiz 1 Question for 10 Points State
+    private val _dailyQuestion = MutableStateFlow(QuizBank.getDailyQuestion())
+    val dailyQuestion: StateFlow<QuizQuestion> = _dailyQuestion.asStateFlow()
+
+    private val _dailyQuizSelectedOption = MutableStateFlow<Int?>(null)
+    val dailyQuizSelectedOption: StateFlow<Int?> = _dailyQuizSelectedOption.asStateFlow()
+
+    private val _dailyQuizIsCorrect = MutableStateFlow<Boolean?>(null)
+    val dailyQuizIsCorrect: StateFlow<Boolean?> = _dailyQuizIsCorrect.asStateFlow()
+
+    private val _dailyQuizBotCommentary = MutableStateFlow<String?>(null)
+    val dailyQuizBotCommentary: StateFlow<String?> = _dailyQuizBotCommentary.asStateFlow()
+
+    private val _isDailyQuizCompleted = MutableStateFlow(false)
+    val isDailyQuizCompleted: StateFlow<Boolean> = _isDailyQuizCompleted.asStateFlow()
+
     // User Profile Stream
     val currentUserProfile: StateFlow<UserProfileEntity?> = repository.currentUserProfile
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Badges & Eco-Activities Streams
+    val allBadges: StateFlow<List<UserBadgeEntity>> = repository.allBadges
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val unlockedBadges: StateFlow<List<UserBadgeEntity>> = repository.unlockedBadges
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allEcoActivities: StateFlow<List<EcoActivityRecordEntity>> = repository.allEcoActivities
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Admin Authorization derived purely from current user email matching the allowed list
     val isUserAdminAuthorized: StateFlow<Boolean> = repository.currentUserProfile
@@ -124,6 +193,12 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
     val allTrainings: StateFlow<List<TrainingEntity>> = repository.allTrainings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allMentorsTrainers: StateFlow<List<MentorTrainerEntity>> = repository.allMentorsTrainers
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val availableMentors: StateFlow<List<MentorTrainerEntity>> = repository.availableMentors
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val impactMetrics: StateFlow<List<ImpactMetricEntity>> = repository.impactMetrics
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -155,6 +230,53 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
                 showToast("⚠️ Impossible de synchroniser. Vérifiez votre connexion Internet.")
             }
         }
+    }
+
+    // --- GitHub App Updates Operations ---
+    fun checkForAppUpdates(silent: Boolean = false) {
+        viewModelScope.launch {
+            _isCheckingUpdate.value = true
+            try {
+                val currentVerName = try {
+                    val pInfo = getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0)
+                    pInfo.versionName ?: "1.0"
+                } catch (e: Exception) {
+                    "1.0"
+                }
+
+                val update = GitHubUpdateService.checkForUpdates(
+                    currentVersionName = currentVerName
+                )
+                _appUpdateInfo.value = update
+
+                if (!silent) {
+                    if (update.hasUpdate) {
+                        _showUpdateModal.value = true
+                        showToast("Nouvelle version v${update.latestVersionName} disponible !")
+                    } else {
+                        showToast("Votre application AIL4C est déjà à jour (v$currentVerName).")
+                    }
+                }
+            } catch (e: Exception) {
+                if (!silent) {
+                    showToast("Impossible de vérifier les mises à jour : ${e.localizedMessage}")
+                }
+            } finally {
+                _isCheckingUpdate.value = false
+            }
+        }
+    }
+
+    fun openUpdateModal() {
+        _showUpdateModal.value = true
+    }
+
+    fun closeUpdateModal() {
+        _showUpdateModal.value = false
+    }
+
+    fun dismissUpdateBanner() {
+        _isUpdateDismissed.value = true
     }
 
     fun navigateTo(screen: AppScreen) {
@@ -243,15 +365,98 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // --- Eco-Citizen Activities & Badges Operations ---
+    fun recordEcoActivity(preset: EcoActivityPreset) {
+        viewModelScope.launch {
+            val newlyUnlocked = repository.recordEcoActivity(
+                activityKey = preset.key,
+                title = preset.title,
+                category = preset.category,
+                pointsAwarded = preset.points,
+                description = preset.description,
+                iconKey = preset.iconKey
+            )
+            showToast("🌱 Action validée ! +${preset.points} Points Éco-Citoyens !")
+            if (newlyUnlocked != null) {
+                _newlyUnlockedBadge.value = newlyUnlocked
+            }
+        }
+    }
+
+    fun clearNewlyUnlockedBadge() {
+        val badge = _newlyUnlockedBadge.value
+        _newlyUnlockedBadge.value = null
+        if (badge != null) {
+            viewModelScope.launch {
+                repository.markBadgeCelebrationSeen(badge.badgeId)
+            }
+        }
+    }
+
+    // --- Daily Check-in & Connexion Quotidienne (+5 pts) ---
+    fun triggerDailyLoginCheck() {
+        viewModelScope.launch {
+            val (isAwarded, badge) = repository.checkAndAwardDailyLogin()
+            if (isAwarded) {
+                showToast("✨ +5 Points Éco-Citoyens pour votre connexion du jour !")
+                if (badge != null) {
+                    _newlyUnlockedBadge.value = badge
+                }
+            }
+        }
+    }
+
+    // --- Daily Quiz Operations (1 Question par jour = 10 Points) ---
+    fun loadDailyQuizState() {
+        viewModelScope.launch {
+            val isCompleted = repository.isDailyQuizAnsweredToday()
+            _isDailyQuizCompleted.value = isCompleted
+            _dailyQuestion.value = QuizBank.getDailyQuestion()
+        }
+    }
+
+    fun submitDailyQuizAnswer(selectedOptionIndex: Int) {
+        if (_dailyQuizSelectedOption.value != null || _isDailyQuizCompleted.value) return
+        val question = _dailyQuestion.value
+        _dailyQuizSelectedOption.value = selectedOptionIndex
+        val isCorrect = selectedOptionIndex == question.correctIndex
+        _dailyQuizIsCorrect.value = isCorrect
+        _dailyQuizBotCommentary.value = QuizBank.getBotCommentary(isCorrect, question)
+        _isDailyQuizCompleted.value = true
+
+        viewModelScope.launch {
+            val newlyUnlocked = repository.recordDailyQuizAnswer(question, isCorrect)
+            if (isCorrect) {
+                showToast("🎯 Bravo ! +10 Points Éco-Citoyens remportés !")
+            } else {
+                showToast("🌱 Réponse enregistrée. Rendez-vous demain pour une nouvelle question !")
+            }
+            if (newlyUnlocked != null) {
+                _newlyUnlockedBadge.value = newlyUnlocked
+            }
+        }
+    }
+
+    fun restartDailyQuizForTesting() {
+        _dailyQuizSelectedOption.value = null
+        _dailyQuizIsCorrect.value = null
+        _dailyQuizBotCommentary.value = null
+        _isDailyQuizCompleted.value = false
+        showToast("Question du jour réinitialisée pour entraînement !")
+    }
+
     // --- AI Assistant Operations ---
     fun sendAiMessage(prompt: String) {
         if (prompt.isBlank()) return
         viewModelScope.launch {
             _isAiThinking.value = true
             try {
-                repository.askAiAssistant(prompt.trim())
+                val (_, newlyUnlockedBadge) = repository.askAiAssistant(prompt.trim())
+                if (newlyUnlockedBadge != null) {
+                    _newlyUnlockedBadge.value = newlyUnlockedBadge
+                }
             } catch (e: Exception) {
-                showToast("Erreur de connexion avec l'IA AWA")
+                showToast("Erreur de connexion avec ÉcoBot IA")
             } finally {
                 _isAiThinking.value = false
             }
@@ -310,7 +515,7 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             val dateStr = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.FRENCH).format(Date())
-            repository.registerVolunteer(
+            val (_, newlyUnlocked) = repository.registerVolunteer(
                 VolunteerRegistrationEntity(
                     fullName = fullName.trim(),
                     phone = phone.trim(),
@@ -323,7 +528,10 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
                     dateSubmitted = dateStr
                 )
             )
-            showToast("Félicitations ! Votre inscription a bien été enregistrée.")
+            showToast("🌿 Inscription validée ! +10 Points Éco-Citoyens pour votre participation terrain !")
+            if (newlyUnlocked != null) {
+                _newlyUnlockedBadge.value = newlyUnlocked
+            }
             onSuccess()
         }
     }
@@ -437,6 +645,21 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
             repository.deleteTraining(id)
             if (_selectedTraining.value?.id == id) _selectedTraining.value = null
             showToast("Formation supprimée.")
+        }
+    }
+
+    fun saveMentorTrainer(mentor: MentorTrainerEntity, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            repository.saveMentorTrainer(mentor)
+            showToast("Profil formateur / mentor enregistré avec succès.")
+            onSuccess()
+        }
+    }
+
+    fun deleteMentorTrainer(id: Long) {
+        viewModelScope.launch {
+            repository.deleteMentorTrainer(id)
+            showToast("Formateur / mentor supprimé.")
         }
     }
 

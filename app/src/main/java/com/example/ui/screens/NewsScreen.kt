@@ -72,6 +72,10 @@ fun NewsScreen(
 ) {
     val allNews by viewModel.publishedNews.collectAsStateWithLifecycle()
     val selectedNews by viewModel.selectedNews.collectAsStateWithLifecycle()
+    val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
+
+    val headerTitle = orgMap["news_header_title"] ?: "Fil d'Actualités & Communiqués"
+    val headerSubtitle = orgMap["news_header_subtitle"] ?: "Suivez les actions sur le terrain, nos partenariats et les initiatives de l'ONG."
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tous") }
@@ -120,6 +124,28 @@ fun NewsScreen(
                 selectedCategory = selectedCategory,
                 onCategorySelected = { selectedCategory = it }
             )
+        }
+
+        if (searchQuery.isBlank() && selectedCategory == "Tous") {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = headerTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = headerSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
         if (filteredNews.isEmpty()) {

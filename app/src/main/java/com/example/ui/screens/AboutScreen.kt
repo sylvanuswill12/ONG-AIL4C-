@@ -77,6 +77,9 @@ import com.example.ui.theme.AilMint
 import com.example.ui.theme.AilMintDarkGreen
 import com.example.ui.theme.AilMintLight
 import com.example.ui.theme.AilMintPillBg
+import com.example.ui.theme.AilOrangeDark
+import com.example.ui.theme.AilOrangeLight
+import com.example.ui.theme.AilOrangePrimary
 import com.example.ui.viewmodel.AilViewModel
 import com.example.ui.viewmodel.AppScreen
 
@@ -89,6 +92,7 @@ fun AboutScreen(
     val context = LocalContext.current
     val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
     val isUserAdminAuthorized by viewModel.isUserAdminAuthorized.collectAsStateWithLifecycle()
+    val allMentorsTrainers by viewModel.allMentorsTrainers.collectAsStateWithLifecycle()
 
     val orgName = orgMap["org_name"] ?: "Association Ivoirienne de Lutte contre le Changement Climatique et le Chômage (des Jeunes)"
     val orgAcronym = orgMap["org_acronym"] ?: "AIL4C"
@@ -104,8 +108,8 @@ fun AboutScreen(
     val phone1 = orgMap["org_phone_1"] ?: "+225 07 89 71 02 89"
     val phone2 = orgMap["org_phone_2"] ?: "+225 07 89 97 63 23"
     val email = orgMap["org_email"] ?: "ongail4c@gmail.com"
-    val websiteUrl = orgMap["org_website_url"] ?: "https://www.ongail4c.com"
-    val websiteDomain = orgMap["org_website_domain"] ?: "www.ongail4c.com"
+    val websiteUrl = orgMap["org_website_url"] ?: "https://ongail4csiteweb.netlify.app/"
+    val websiteDomain = orgMap["org_website_domain"] ?: "ongail4csiteweb.netlify.app"
     val facebookUrl = orgMap["org_facebook_url"] ?: "https://www.facebook.com/share/1GvChYFAMY/"
     val facebookPageName = orgMap["org_facebook_page_name"] ?: "ONG AIL4C (Page Facebook Officielle)"
     val legalStatus = orgMap["org_legal_status"] ?: "Organisation Non Gouvernementale (ONG) à but non lucratif enregistrée en Côte d'Ivoire"
@@ -287,6 +291,111 @@ fun AboutScreen(
                 }
             }
 
+            // Official Website Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, AilEmerald.copy(alpha = 0.4f)),
+                    elevation = CardDefaults.cardElevation(3.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("about_official_website_card")
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(AilMintLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Public,
+                                    contentDescription = "Site Web",
+                                    tint = AilEmeraldDark,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Site Web Officiel de l'ONG",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.Black
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        color = Color(0xFF10B981).copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "En ligne",
+                                            color = Color(0xFF047857),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = websiteDomain,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AilEmeraldDark,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "Accédez au portail web complet de l'AIL4C pour découvrir nos rapports d'activités, nos galeries photos, nos plaidoyers et actualités détaillées.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.DarkGray,
+                            lineHeight = 18.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        androidx.compose.material3.Button(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(websiteUrl))
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    viewModel.showToast("Ouverture du site : $websiteUrl")
+                                }
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = AilEmeraldDark),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("about_visit_website_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInBrowser,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Visiter le Site Web Officiel",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+
             // Governance & Leadership Card
             item {
                 Card(
@@ -425,6 +534,112 @@ fun AboutScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 10.sp
                                     )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Formateurs & Mentors Référents Section
+            if (allMentorsTrainers.isNotEmpty()) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(2.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(AilEmeraldLight),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Groups,
+                                        contentDescription = null,
+                                        tint = AilEmeraldDark,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Formateurs & Mentors Référents",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Équipe pédagogique et experts terrain",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                allMentorsTrainers.forEach { mentor ->
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = AilMintLight.copy(alpha = 0.35f),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .clip(CircleShape)
+                                                    .background(AilEmerald),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                if (mentor.photoResName.isNotBlank()) {
+                                                    ResolveImage(
+                                                        imageName = mentor.photoResName,
+                                                        contentDescription = mentor.fullName,
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                } else {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Person,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(22.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = mentor.fullName,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = "${mentor.roleTitle} • ${mentor.specialty}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = AilEmeraldDark
+                                                )
+                                                Text(
+                                                    text = "${mentor.experienceYears} ans d'exp. • ${mentor.location}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    fontSize = 10.sp
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -617,6 +832,22 @@ fun AboutScreen(
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.LightGray.copy(alpha = 0.3f))
 
+                        // Site Web Officiel
+                        ContactInfoRow(
+                            icon = Icons.Default.Public,
+                            label = "Site Web Officiel",
+                            value = websiteDomain,
+                            subValue = websiteUrl,
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(websiteUrl))
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.LightGray.copy(alpha = 0.3f))
+
                         // Facebook
                         ContactInfoRow(
                             icon = Icons.Default.OpenInBrowser,
@@ -641,6 +872,90 @@ fun AboutScreen(
                             subValue = "ONG Reconnue d'Intérêt Général",
                             onClick = null
                         )
+                    }
+                }
+            }
+
+            // Application Version & GitHub Update Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1EBE4)),
+                    elevation = CardDefaults.cardElevation(2.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(AilOrangeLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInBrowser,
+                                    contentDescription = null,
+                                    tint = AilOrangeDark,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Version & Dépôt GitHub",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Mises à jour et suivi du code source",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        ContactInfoRow(
+                            icon = Icons.Default.Verified,
+                            label = "Version Actuelle de l'Application",
+                            value = "Version 1.0 (Build Officiel AIL4C)",
+                            subValue = "Dernière version stable Android",
+                            onClick = null
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color.LightGray.copy(alpha = 0.3f))
+
+                        ContactInfoRow(
+                            icon = Icons.Default.OpenInBrowser,
+                            label = "Dépôt GitHub Officiel",
+                            value = "github.com/sylvanuswill12/ONG-AIL4C-",
+                            subValue = "Consulter les versions et télécharger les APKs",
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/sylvanuswill12/ONG-AIL4C-"))
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        androidx.compose.material3.Button(
+                            onClick = { viewModel.checkForAppUpdates(silent = false) },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = AilOrangePrimary),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Vérifier les mises à jour GitHub",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }

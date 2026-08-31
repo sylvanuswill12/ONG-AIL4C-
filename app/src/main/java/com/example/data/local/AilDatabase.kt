@@ -6,13 +6,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.data.model.AiChatMessageEntity
 import com.example.data.model.EcoActionEntity
+import com.example.data.model.EcoActivityRecordEntity
 import com.example.data.model.ImpactMetricEntity
 import com.example.data.model.MediaTestimonialEntity
+import com.example.data.model.MentorTrainerEntity
 import com.example.data.model.NewsArticleEntity
 import com.example.data.model.OrgInfoEntity
 import com.example.data.model.ProjectEntity
 import com.example.data.model.TrainingApplicationEntity
 import com.example.data.model.TrainingEntity
+import com.example.data.model.UserBadgeEntity
 import com.example.data.model.UserProfileEntity
 import com.example.data.model.VolunteerRegistrationEntity
 
@@ -28,9 +31,12 @@ import com.example.data.model.VolunteerRegistrationEntity
         MediaTestimonialEntity::class,
         OrgInfoEntity::class,
         UserProfileEntity::class,
-        AiChatMessageEntity::class
+        AiChatMessageEntity::class,
+        MentorTrainerEntity::class,
+        EcoActivityRecordEntity::class,
+        UserBadgeEntity::class
     ],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 abstract class AilDatabase : RoomDatabase() {

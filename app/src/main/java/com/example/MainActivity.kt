@@ -1,5 +1,7 @@
 package com.example
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,11 +38,14 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Newspaper
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.PermMedia
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
@@ -76,12 +81,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.AdminLoginDialog
+import com.example.ui.components.AppUpdateBanner
+import com.example.ui.components.AppUpdateModalDialog
+import com.example.ui.components.FireworksCelebrationDialog
 import com.example.ui.components.ResolveImage
 import com.example.ui.screens.AboutScreen
 import com.example.ui.screens.ActionsScreen
@@ -93,8 +102,10 @@ import com.example.ui.screens.MediaScreen
 import com.example.ui.screens.NewsScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.ProjectsScreen
+import com.example.ui.screens.QuizScreen
 import com.example.ui.screens.TrainingsScreen
 import com.example.ui.theme.AilBackgroundLight
+import com.example.ui.theme.AilEmeraldDark
 import com.example.ui.theme.AilGreenAccent
 import com.example.ui.theme.AilGreenDark
 import com.example.ui.theme.AilGreenLight
@@ -131,12 +142,18 @@ fun AilAppMain(viewModel: AilViewModel) {
     val isAuthDialogOpen by viewModel.isAuthDialogOpen.collectAsStateWithLifecycle()
     val userProfile by viewModel.currentUserProfile.collectAsStateWithLifecycle()
     val syncStatus by viewModel.cloudSyncStatus.collectAsStateWithLifecycle()
+    val appUpdateInfo by viewModel.appUpdateInfo.collectAsStateWithLifecycle()
+    val showUpdateModal by viewModel.showUpdateModal.collectAsStateWithLifecycle()
+    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsStateWithLifecycle()
+    val isUpdateDismissed by viewModel.isUpdateDismissed.collectAsStateWithLifecycle()
+    val newlyUnlockedBadge by viewModel.newlyUnlockedBadge.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAdminPinDialog by remember { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.toastMessage.collectLatest { message ->
@@ -152,6 +169,15 @@ fun AilAppMain(viewModel: AilViewModel) {
         }
     }
 
+    if (showUpdateModal && appUpdateInfo != null) {
+        AppUpdateModalDialog(
+            updateInfo = appUpdateInfo!!,
+            onDismiss = { viewModel.closeUpdateModal() },
+            onCheckAgain = { viewModel.checkForAppUpdates(silent = false) },
+            isChecking = isCheckingUpdate
+        )
+    }
+
     if (showAdminPinDialog) {
         AdminLoginDialog(
             onDismiss = { showAdminPinDialog = false },
@@ -161,6 +187,13 @@ fun AilAppMain(viewModel: AilViewModel) {
                     viewModel.navigateTo(AppScreen.ADMIN)
                 }
             }
+        )
+    }
+
+    newlyUnlockedBadge?.let { badge ->
+        FireworksCelebrationDialog(
+            badge = badge,
+            onDismiss = { viewModel.clearNewlyUnlockedBadge() }
         )
     }
 
@@ -374,11 +407,38 @@ fun AilAppMain(viewModel: AilViewModel) {
                     )
 
                     DrawerMenuItem(
+                        icon = Icons.Default.Psychology,
+                        title = "Quiz Climat Quotidien 🎯",
+                        selected = currentScreen == AppScreen.QUIZ,
+                        iconTint = Color(0xFF10B981),
+                        onClick = {
+                            viewModel.navigateTo(AppScreen.QUIZ)
+                            coroutineScope.launch { drawerState.close() }
+                        }
+                    )
+
+                    DrawerMenuItem(
                         icon = Icons.Default.Info,
                         title = "À Propos & Gouvernance AIL4C",
                         selected = currentScreen == AppScreen.ABOUT,
                         onClick = {
                             viewModel.navigateTo(AppScreen.ABOUT)
+                            coroutineScope.launch { drawerState.close() }
+                        }
+                    )
+
+                    DrawerMenuItem(
+                        icon = Icons.Default.Public,
+                        title = "Site Web Officiel de l'ONG 🌐",
+                        selected = false,
+                        iconTint = AilEmeraldDark,
+                        onClick = {
+                            try {
+                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ongail4csiteweb.netlify.app/"))
+                                context.startActivity(webIntent)
+                            } catch (_: Exception) {
+                                viewModel.showToast("Site web : https://ongail4csiteweb.netlify.app/")
+                            }
                             coroutineScope.launch { drawerState.close() }
                         }
                     )
@@ -399,6 +459,17 @@ fun AilAppMain(viewModel: AilViewModel) {
                         selected = false,
                         onClick = {
                             viewModel.triggerManualCloudSync()
+                            coroutineScope.launch { drawerState.close() }
+                        }
+                    )
+
+                    DrawerMenuItem(
+                        icon = Icons.Default.SystemUpdate,
+                        title = if (appUpdateInfo?.hasUpdate == true) "Mise à jour disponible (v${appUpdateInfo?.latestVersionName})" else "Vérifier les mises à jour",
+                        selected = false,
+                        iconTint = if (appUpdateInfo?.hasUpdate == true) AilOrangePrimary else AilGreenAccent,
+                        onClick = {
+                            viewModel.checkForAppUpdates(silent = false)
                             coroutineScope.launch { drawerState.close() }
                         }
                     )
@@ -605,6 +676,20 @@ fun AilAppMain(viewModel: AilViewModel) {
                         )
 
                         NavigationBarItem(
+                            selected = currentScreen == AppScreen.QUIZ,
+                            onClick = { viewModel.navigateTo(AppScreen.QUIZ) },
+                            icon = { Icon(Icons.Default.Psychology, contentDescription = "Quiz") },
+                            label = { Text("Quiz", fontSize = 11.sp, fontWeight = if (currentScreen == AppScreen.QUIZ) FontWeight.Bold else FontWeight.Medium) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = AilOrangePrimary,
+                                selectedTextColor = AilOrangePrimary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = AilOrangePillBg
+                            )
+                        )
+
+                        NavigationBarItem(
                             selected = currentScreen == AppScreen.PROFILE,
                             onClick = {
                                 if (userProfile != null) {
@@ -663,6 +748,18 @@ fun AilAppMain(viewModel: AilViewModel) {
                     }
                 }
 
+                // App Update Notification Banner if a new GitHub release is detected
+                AnimatedVisibility(visible = appUpdateInfo?.hasUpdate == true && !isUpdateDismissed) {
+                    appUpdateInfo?.let { update ->
+                        AppUpdateBanner(
+                            updateInfo = update,
+                            onOpenUpdate = { viewModel.openUpdateModal() },
+                            onDismiss = { viewModel.dismissUpdateBanner() },
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -678,6 +775,7 @@ fun AilAppMain(viewModel: AilViewModel) {
                         AppScreen.AI_ASSISTANT -> AiAssistantScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
                         AppScreen.ABOUT -> AboutScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
                         AppScreen.PROFILE -> ProfileScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
+                        AppScreen.QUIZ -> QuizScreen(viewModel = viewModel, onBack = { viewModel.navigateTo(AppScreen.HOME) })
                         AppScreen.ADMIN -> AdminScreen(viewModel = viewModel)
                     }
 

@@ -109,11 +109,14 @@ fun AiAssistantScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val orgMap by viewModel.orgInfoMap.collectAsState()
     val messages by viewModel.allAiMessages.collectAsState()
     val isThinking by viewModel.isAiThinking.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+
+    val botName = orgMap["ai_assistant_name"] ?: "ÉcoBot IA"
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size, isThinking) {
@@ -122,11 +125,16 @@ fun AiAssistantScreen(
         }
     }
 
+    val q1 = orgMap["ai_quick_prompt_1"] ?: "Comment fabriquer du compost organique ?"
+    val q2 = orgMap["ai_quick_prompt_2"] ?: "Quelles essences d'arbres planter en Côte d'Ivoire ?"
+    val q3 = orgMap["ai_quick_prompt_3"] ?: "Comment recycler le plastique en pavés ?"
+    val q4 = orgMap["ai_quick_prompt_4"] ?: "Comment postuler aux formations gratuites ?"
+
     val quickPrompts = listOf(
-        "🌱 Comment fabriquer du compost organique ?",
-        "🌳 Quelles essences d'arbres planter en Côte d'Ivoire ?",
-        "♻️ Comment recycler le plastique en pavés ?",
-        "🎓 Comment postuler aux formations gratuites ?",
+        "🌱 $q1",
+        "🌳 $q2",
+        "♻️ $q3",
+        "🎓 $q4",
         "☀️ Quel dimensionnement pour une pompe solaire ?",
         "💚 Comment soutenir l'ONG AIL4C par Wave ou Orange Money ?"
     )
@@ -151,7 +159,7 @@ fun AiAssistantScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "ÉcoBot IA",
+                                contentDescription = botName,
                                 tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -160,7 +168,7 @@ fun AiAssistantScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "ÉcoBot IA",
+                                    text = botName,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color.Black

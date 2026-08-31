@@ -12,14 +12,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val VibrantColorScheme = lightColorScheme(
-    primary = AilOrangePrimary,
+    primary = AilEmerald, // Nature & ecological primary green
     onPrimary = Color.White,
-    primaryContainer = AilOrangePillBg,
-    onPrimaryContainer = AilOrangeDark,
-    secondary = AilGreenAccent, // Touch of eco green
+    primaryContainer = AilEmeraldLight,
+    onPrimaryContainer = AilEmeraldDark,
+    secondary = AilOrangePrimary, // Lively warm orange accent
     onSecondary = Color.White,
-    secondaryContainer = AilGreenLight,
-    onSecondaryContainer = AilGreenDark,
+    secondaryContainer = AilOrangeLight,
+    onSecondaryContainer = AilOrangeDark,
     tertiary = AilAmber,
     onTertiary = Color.White,
     background = AilBackgroundLight,

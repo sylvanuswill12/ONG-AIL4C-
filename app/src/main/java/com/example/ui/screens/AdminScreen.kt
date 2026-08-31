@@ -30,24 +30,36 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Forest
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -92,6 +104,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.EcoActionEntity
 import com.example.data.model.ImpactMetricEntity
+import com.example.data.model.MentorTrainerEntity
 import com.example.data.model.NewsArticleEntity
 import com.example.data.model.ProjectEntity
 import com.example.data.model.TrainingApplicationEntity
@@ -120,14 +133,16 @@ import java.io.FileOutputStream
 
 enum class AdminTab {
     HOME_CONFIG,
+    ORG_INFO,
+    GLOBAL_TEXTS,
     NEWS,
     ACTIONS,
     PROJECTS,
     TRAININGS,
+    TRAINERS_MENTORS,
     VOLUNTEERS,
     APPLICATIONS,
-    METRICS,
-    ORG_INFO
+    METRICS
 }
 
 @Composable
@@ -144,6 +159,7 @@ fun AdminScreen(
     val allActions by viewModel.allActions.collectAsStateWithLifecycle()
     val allProjects by viewModel.allProjects.collectAsStateWithLifecycle()
     val allTrainings by viewModel.allTrainings.collectAsStateWithLifecycle()
+    val allMentorsTrainers by viewModel.allMentorsTrainers.collectAsStateWithLifecycle()
     val volunteers by viewModel.volunteerRegistrations.collectAsStateWithLifecycle()
     val applications by viewModel.trainingApplications.collectAsStateWithLifecycle()
     val impactMetrics by viewModel.impactMetrics.collectAsStateWithLifecycle()
@@ -166,6 +182,10 @@ fun AdminScreen(
     // Dialog state for Create/Edit Training
     var editingTraining by remember { mutableStateOf<TrainingEntity?>(null) }
     var showTrainingDialog by remember { mutableStateOf(false) }
+
+    // Dialog state for Create/Edit Mentor & Trainer
+    var editingMentor by remember { mutableStateOf<MentorTrainerEntity?>(null) }
+    var showMentorDialog by remember { mutableStateOf(false) }
 
     // Dialog state for Impact Metric edit
     var editingMetric by remember { mutableStateOf<ImpactMetricEntity?>(null) }
@@ -387,6 +407,7 @@ fun AdminScreen(
                             "action" -> viewModel.deleteAction(id)
                             "project" -> viewModel.deleteProject(id)
                             "training" -> viewModel.deleteTraining(id)
+                            "mentor" -> viewModel.deleteMentorTrainer(id)
                             "volunteer" -> viewModel.deleteVolunteerRegistration(id)
                             "application" -> viewModel.deleteTrainingApplication(id)
                         }
@@ -532,6 +553,23 @@ fun AdminScreen(
         )
     }
 
+    // Mentor / Trainer Form Dialog
+    if (showMentorDialog) {
+        AdminMentorFormDialog(
+            initial = editingMentor,
+            onDismiss = {
+                showMentorDialog = false
+                editingMentor = null
+            },
+            onSave = { mentor ->
+                viewModel.saveMentorTrainer(mentor) {
+                    showMentorDialog = false
+                    editingMentor = null
+                }
+            }
+        )
+    }
+
     // Impact Metric Edit Dialog
     if (editingMetric != null) {
         AdminMetricEditDialog(
@@ -653,15 +691,17 @@ fun AdminScreen(
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(AdminTab.values()) { tab ->
                             val label = when (tab) {
-                                AdminTab.HOME_CONFIG -> "Accueil & Config"
+                                AdminTab.HOME_CONFIG -> "Accueil & Hero"
+                                AdminTab.ORG_INFO -> "À Propos & Organisation"
+                                AdminTab.GLOBAL_TEXTS -> "Toutes les Écritures (App)"
                                 AdminTab.NEWS -> "Actualités (${allNews.size})"
                                 AdminTab.ACTIONS -> "Actions (${allActions.size})"
                                 AdminTab.PROJECTS -> "Projets (${allProjects.size})"
                                 AdminTab.TRAININGS -> "Formations (${allTrainings.size})"
+                                AdminTab.TRAINERS_MENTORS -> "Mentors & Formateurs (${allMentorsTrainers.size})"
                                 AdminTab.VOLUNTEERS -> "Bénévoles (${volunteers.size})"
                                 AdminTab.APPLICATIONS -> "Candidats (${applications.size})"
                                 AdminTab.METRICS -> "Indicateurs"
-                                AdminTab.ORG_INFO -> "Infos ONG"
                             }
                             FilterChip(
                                 selected = selectedTab == tab,
@@ -683,6 +723,18 @@ fun AdminScreen(
             AdminTab.HOME_CONFIG -> {
                 item {
                     AdminHomeConfigTab(viewModel = viewModel)
+                }
+            }
+
+            AdminTab.ORG_INFO -> {
+                item {
+                    AdminOrgInfoTab(viewModel = viewModel)
+                }
+            }
+
+            AdminTab.GLOBAL_TEXTS -> {
+                item {
+                    AdminGlobalTextsTab(viewModel = viewModel)
                 }
             }
 
@@ -774,6 +826,42 @@ fun AdminScreen(
                         },
                         onDelete = { itemToDelete = Pair("training", train.id) }
                     )
+                }
+            }
+
+            AdminTab.TRAINERS_MENTORS -> {
+                item {
+                    AdminSectionBar(
+                        title = "Gestion des Mentors & Formateurs (${allMentorsTrainers.size})",
+                        onAddClick = {
+                            editingMentor = null
+                            showMentorDialog = true
+                        }
+                    )
+                }
+                if (allMentorsTrainers.isEmpty()) {
+                    item {
+                        Text(
+                            text = "Aucun mentor ou formateur configuré pour le moment.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                } else {
+                    items(allMentorsTrainers) { mentor ->
+                        AdminMentorRow(
+                            mentor = mentor,
+                            onEdit = {
+                                editingMentor = mentor
+                                showMentorDialog = true
+                            },
+                            onDelete = { itemToDelete = Pair("mentor", mentor.id) },
+                            onToggleAvailability = {
+                                viewModel.saveMentorTrainer(mentor.copy(isAvailableForMentoring = !mentor.isAvailableForMentoring)) {}
+                            }
+                        )
+                    }
                 }
             }
 
@@ -931,12 +1019,6 @@ fun AdminScreen(
                             }
                         }
                     }
-                }
-            }
-
-            AdminTab.ORG_INFO -> {
-                item {
-                    AdminOrgInfoTab(viewModel = viewModel)
                 }
             }
         }
@@ -2235,8 +2317,8 @@ fun AdminOrgInfoTab(viewModel: AilViewModel) {
             phone1 = orgMap["org_phone_1"] ?: "+225 07 89 71 02 89"
             phone2 = orgMap["org_phone_2"] ?: "+225 07 89 97 63 23"
             email = orgMap["org_email"] ?: "ongail4c@gmail.com"
-            websiteUrl = orgMap["org_website_url"] ?: "https://www.ongail4c.com"
-            websiteDomain = orgMap["org_website_domain"] ?: "www.ongail4c.com"
+            websiteUrl = orgMap["org_website_url"] ?: "https://ongail4csiteweb.netlify.app/"
+            websiteDomain = orgMap["org_website_domain"] ?: "ongail4csiteweb.netlify.app"
             facebookPageName = orgMap["org_facebook_page_name"] ?: "ONG AIL4C (Page Facebook Officielle)"
             facebookUrl = orgMap["org_facebook_url"] ?: "https://www.facebook.com/share/1GvChYFAMY/"
             legalStatus = orgMap["org_legal_status"] ?: "Organisation Non Gouvernementale (ONG) à but non lucratif enregistrée en Côte d'Ivoire"
@@ -2442,7 +2524,8 @@ fun AdminOrgInfoTab(viewModel: AilViewModel) {
                     websiteUrl = it
                 }
             },
-            label = { Text("Site Web Officiel (ex: www.ongail4c.com)") },
+            label = { Text("Site Web Officiel (ex: ongail4csiteweb.netlify.app)") },
+            placeholder = { Text("ongail4csiteweb.netlify.app") },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         )
@@ -2907,6 +2990,1198 @@ fun AdminHomeConfigTab(viewModel: AilViewModel) {
             Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Enregistrer les Modifications de la Page d'Accueil", fontWeight = FontWeight.Bold, color = Color.White)
+        }
+    }
+}
+
+// Mentor & Trainer Admin Row
+@Composable
+fun AdminMentorRow(
+    mentor: MentorTrainerEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onToggleAvailability: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(AilEmeraldLight),
+                contentAlignment = Alignment.Center
+            ) {
+                if (mentor.photoResName.isNotBlank()) {
+                    ResolveImage(
+                        imageName = mentor.photoResName,
+                        contentDescription = mentor.fullName,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = AilEmeraldDark,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = when (mentor.category) {
+                            "Mentor", "Mentorat" -> AilMint
+                            "Formatrice & Mentore" -> AilEmeraldLight
+                            "Expert Climat" -> AilSoftYellow
+                            else -> AilMintLight
+                        },
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = mentor.category,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = AilForestDark,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    if (mentor.isAvailableForMentoring) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            color = Color(0xFFE8F8F0),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "Disponible",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E824C),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = mentor.fullName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${mentor.roleTitle} • ${mentor.specialty}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AilForestDark,
+                    maxLines = 1
+                )
+                Text(
+                    text = "${mentor.experienceYears} ans d'exp. • ${mentor.location} • ${mentor.phone}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(onClick = onToggleAvailability) {
+                Icon(
+                    imageVector = if (mentor.isAvailableForMentoring) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                    contentDescription = "Disponibilité",
+                    tint = if (mentor.isAvailableForMentoring) AilEmerald else Color.Gray
+                )
+            }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = "Modifier", tint = AilForestGreen)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Supprimer", tint = Color(0xFFC0392B))
+            }
+        }
+    }
+}
+
+// Dialog: Create or Edit Mentor / Trainer
+@Composable
+fun AdminMentorFormDialog(
+    initial: MentorTrainerEntity?,
+    onDismiss: () -> Unit,
+    onSave: (MentorTrainerEntity) -> Unit
+) {
+    var fullName by remember { mutableStateOf(initial?.fullName ?: "") }
+    var roleTitle by remember { mutableStateOf(initial?.roleTitle ?: "Formateur & Expert Climat") }
+    var category by remember { mutableStateOf(initial?.category ?: "Formateur") }
+    var specialty by remember { mutableStateOf(initial?.specialty ?: "") }
+    var bio by remember { mutableStateOf(initial?.bio ?: "") }
+    var experienceYears by remember { mutableStateOf(initial?.experienceYears?.toString() ?: "5") }
+    var phone by remember { mutableStateOf(initial?.phone ?: "+225 ") }
+    var email by remember { mutableStateOf(initial?.email ?: "") }
+    var location by remember { mutableStateOf(initial?.location ?: "Bouaké, Côte d'Ivoire") }
+    var displayOrder by remember { mutableStateOf(initial?.displayOrder?.toString() ?: "1") }
+    var isAvailableForMentoring by remember { mutableStateOf(initial?.isAvailableForMentoring ?: true) }
+    var photoResName by remember { mutableStateOf(initial?.photoResName ?: "") }
+
+    val categories = listOf("Formateur", "Mentor", "Formatrice & Mentore", "Expert Climat", "Conseiller Insertion")
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .padding(vertical = 24.dp)
+        ) {
+            LazyColumn(modifier = Modifier.padding(20.dp)) {
+                item {
+                    Text(
+                        text = if (initial == null) "Ajouter un Mentor ou Formateur" else "Modifier Mentor / Formateur",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AilForestGreen
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    AdminMediaPickerSection(
+                        currentMedia = photoResName,
+                        onMediaChanged = { photoResName = it },
+                        label = "Photo de profil (Galerie ou Nom ressource)"
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = fullName,
+                        onValueChange = { fullName = it },
+                        label = { Text("Nom complet *") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = roleTitle,
+                        onValueChange = { roleTitle = it },
+                        label = { Text("Titre / Rôle (ex: Expert Agroforesterie)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text("Catégorie :", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = AilForestDark)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(categories) { cat ->
+                            FilterChip(
+                                selected = category == cat,
+                                onClick = { category = cat },
+                                label = { Text(cat, fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AilMint,
+                                    selectedLabelColor = AilForestDark
+                                )
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = specialty,
+                        onValueChange = { specialty = it },
+                        label = { Text("Spécialité technique *") },
+                        placeholder = { Text("ex: Pépinières durables, Énergie solaire...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = bio,
+                        onValueChange = { bio = it },
+                        label = { Text("Biographie & Parcours d'accompagnement") },
+                        minLines = 3,
+                        maxLines = 5,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = experienceYears,
+                            onValueChange = { experienceYears = it },
+                            label = { Text("Années d'exp.") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        OutlinedTextField(
+                            value = displayOrder,
+                            onValueChange = { displayOrder = it },
+                            label = { Text("Ordre d'aff.") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Téléphone / WhatsApp") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email professionnel") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = { Text("Localisation / Ville") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Disponible pour le mentorat des jeunes :", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                        Switch(
+                            checked = isAvailableForMentoring,
+                            onCheckedChange = { isAvailableForMentoring = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = AilEmerald)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                            Text("Annuler")
+                        }
+                        Button(
+                            onClick = {
+                                val item = (initial ?: MentorTrainerEntity(
+                                    fullName = "",
+                                    roleTitle = "",
+                                    category = category,
+                                    specialty = specialty,
+                                    bio = bio,
+                                    experienceYears = experienceYears.toIntOrNull() ?: 5,
+                                    phone = phone,
+                                    email = email,
+                                    location = location,
+                                    isAvailableForMentoring = isAvailableForMentoring,
+                                    displayOrder = displayOrder.toIntOrNull() ?: 1,
+                                    photoResName = photoResName
+                                )).copy(
+                                    fullName = fullName.trim(),
+                                    roleTitle = roleTitle.trim(),
+                                    category = category.trim(),
+                                    specialty = specialty.trim(),
+                                    bio = bio.trim(),
+                                    experienceYears = experienceYears.toIntOrNull() ?: 5,
+                                    phone = phone.trim(),
+                                    email = email.trim(),
+                                    location = location.trim(),
+                                    isAvailableForMentoring = isAvailableForMentoring,
+                                    displayOrder = displayOrder.toIntOrNull() ?: 1,
+                                    photoResName = photoResName.trim()
+                                )
+                                onSave(item)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen)
+                        ) {
+                            Text("Enregistrer", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Dialog: Add Custom String / Key
+@Composable
+fun AdminAddCustomKeyDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (key: String, value: String) -> Unit
+) {
+    var newKey by remember { mutableStateOf("") }
+    var newValue by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Ajouter une Nouvelle Écriture / Clé", fontWeight = FontWeight.Bold, color = AilForestDark)
+        },
+        text = {
+            Column {
+                Text(
+                    "Définissez une clé unique (ex: quiz_bonus_rule, about_partners_tag) et son texte associé.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = newKey,
+                    onValueChange = { newKey = it.replace(" ", "_").lowercase() },
+                    label = { Text("Clé unique (snake_case)") },
+                    placeholder = { Text("ex: my_custom_text_key") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = newValue,
+                    onValueChange = { newValue = it },
+                    label = { Text("Texte / Valeur") },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (newKey.isNotBlank()) {
+                        onConfirm(newKey.trim(), newValue.trim())
+                    }
+                },
+                enabled = newKey.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen)
+            ) {
+                Text("Ajouter & Enregistrer")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annuler")
+            }
+        }
+    )
+}
+
+// TAB: Admin Global Texts & Universal Config Editor
+@Composable
+fun AdminGlobalTextsTab(viewModel: AilViewModel) {
+    val orgMap by viewModel.orgInfoMap.collectAsStateWithLifecycle()
+    var searchQuery by remember { mutableStateOf("") }
+    var showAddKeyDialog by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf<String?>(null) }
+
+    // Page titles & subtitles
+    var homeWelcomeTitle by remember(orgMap) { mutableStateOf(orgMap["home_welcome_title"] ?: "Bienvenue sur AIL4C") }
+    var homeWelcomeSubtitle by remember(orgMap) { mutableStateOf(orgMap["home_welcome_subtitle"] ?: "La plateforme citoyenne d'action pour le climat et l'insertion des jeunes") }
+    var homeQuizTitle by remember(orgMap) { mutableStateOf(orgMap["home_quiz_title"] ?: "Quiz Climat Quotidien • 1 Question par Jour") }
+    var homeQuizSubtitle by remember(orgMap) { mutableStateOf(orgMap["home_quiz_subtitle"] ?: "Testez vos connaissances chaque jour et remportez +10 Points Éco-Citoyens !") }
+    var homeQuizBtn by remember(orgMap) { mutableStateOf(orgMap["home_quiz_btn"] ?: "Participer au Quiz du Jour") }
+    var homeFooterCopyright by remember(orgMap) { mutableStateOf(orgMap["home_footer_copyright"] ?: "© 2026 ONG AIL4C • Tous droits réservés") }
+    var homeFooterSlogan by remember(orgMap) { mutableStateOf(orgMap["home_footer_slogan"] ?: "Agir pour le Climat, Former la Jeunesse, Bâtir l'Avenir") }
+
+    // About screen texts
+    var aboutHeroTag by remember(orgMap) { mutableStateOf(orgMap["about_hero_tag"] ?: "ONG AIL4C • Côte d'Ivoire") }
+    var aboutMottoQuote by remember(orgMap) { mutableStateOf(orgMap["about_motto_quote"] ?: "« Agir pour le Climat, Former la Jeunesse, Bâtir l'Avenir »") }
+    var aboutHistoryTitle by remember(orgMap) { mutableStateOf(orgMap["about_history_title"] ?: "Présentation & Historique") }
+    var aboutMissionTitle by remember(orgMap) { mutableStateOf(orgMap["about_mission_title"] ?: "Notre Mission") }
+    var aboutVisionTitle by remember(orgMap) { mutableStateOf(orgMap["about_vision_title"] ?: "Notre Vision") }
+    var aboutPillarsTitle by remember(orgMap) { mutableStateOf(orgMap["about_pillars_title"] ?: "Nos Piliers Stratégiques & Objectifs") }
+    var aboutGovernanceTitle by remember(orgMap) { mutableStateOf(orgMap["about_governance_title"] ?: "Gouvernance & Présidence") }
+    var aboutContactTitle by remember(orgMap) { mutableStateOf(orgMap["about_contact_title"] ?: "Coordonnées & Siège National") }
+    var aboutPartnersTitle by remember(orgMap) { mutableStateOf(orgMap["about_partners_title"] ?: "Partenaires & Alliances Stratégiques") }
+
+    // Trainings screen texts
+    var trainingsHeaderTitle by remember(orgMap) { mutableStateOf(orgMap["trainings_header_title"] ?: "Pôle Formations & Métiers Verts") }
+    var trainingsHeaderSubtitle by remember(orgMap) { mutableStateOf(orgMap["trainings_header_subtitle"] ?: "Développez vos compétences éco-citoyennes et participez à la transition écologique.") }
+    var trainingsMentorsTitle by remember(orgMap) { mutableStateOf(orgMap["trainings_mentors_title"] ?: "Formateurs & Mentors Climat") }
+    var trainingsNotice by remember(orgMap) { mutableStateOf(orgMap["trainings_application_notice"] ?: "Toutes les formations de l'AIL4C sont gratuites ou subventionnées pour les jeunes vulnérables et passionnés de transition écologique.") }
+
+    // Projects screen texts
+    var projectsHeaderTitle by remember(orgMap) { mutableStateOf(orgMap["projects_header_title"] ?: "Grands Projets & Chantiers Climat") }
+    var projectsHeaderSubtitle by remember(orgMap) { mutableStateOf(orgMap["projects_header_subtitle"] ?: "Découvrez nos programmes d'impact environnemental, reboisement et économie circulaire en cours de réalisation.") }
+    var projectsCallToAction by remember(orgMap) { mutableStateOf(orgMap["projects_call_to_action"] ?: "Contribuer ou Proposer un Partenariat") }
+
+    // News & Actions screen texts
+    var newsHeaderTitle by remember(orgMap) { mutableStateOf(orgMap["news_header_title"] ?: "Actualités & Reportages Terrain") }
+    var newsHeaderSubtitle by remember(orgMap) { mutableStateOf(orgMap["news_header_subtitle"] ?: "Suivez au quotidien l'avancée de nos actions, nos communiqués officiels et nos succès écologiques.") }
+    var actionsHeaderTitle by remember(orgMap) { mutableStateOf(orgMap["actions_header_title"] ?: "Missions & Actions Citoyennes") }
+    var actionsHeaderSubtitle by remember(orgMap) { mutableStateOf(orgMap["actions_header_subtitle"] ?: "Engagez-vous sur le terrain : reboisements, curages citoyens, pépinières et sensibilisation.") }
+
+    // Quiz screen texts
+    var quizHeaderTitle by remember(orgMap) { mutableStateOf(orgMap["quiz_header_title"] ?: "Quiz Climat & Éco-Savoir") }
+    var quizHeaderSubtitle by remember(orgMap) { mutableStateOf(orgMap["quiz_header_subtitle"] ?: "1 question par jour pour renforcer vos connaissances environnementales et remporter +10 points !") }
+    var quizRewardText by remember(orgMap) { mutableStateOf(orgMap["quiz_daily_points_reward_text"] ?: "Bravo ! +10 Points Éco-Citoyens remportés !") }
+    var quizCongratsMessage by remember(orgMap) { mutableStateOf(orgMap["quiz_congrats_message"] ?: "Excellente réponse ! Vous contribuez activement à la sensibilisation écologique.") }
+
+    // AI Assistant Bot texts
+    var aiAssistantName by remember(orgMap) { mutableStateOf(orgMap["ai_assistant_name"] ?: "ÉcoBot IA") }
+    var aiWelcomeMessage by remember(orgMap) {
+        mutableStateOf(
+            orgMap["ai_welcome_message"]
+                ?: "Bonjour ! Je suis ÉcoBot IA, l'assistant intelligent de l'ONG AIL4C. Posez-moi toutes vos questions sur le climat, l'agroforesterie, le reboisement, le recyclage et les actions citoyennes !"
+        )
+    }
+    var aiPromptOverride by remember(orgMap) {
+        mutableStateOf(
+            orgMap["ai_system_instructions_override"]
+                ?: "Tu es ÉcoBot IA, l'expert et assistant écologique officiel de l'ONG AIL4C en Côte d'Ivoire. Sois encourageant, concis, pédagogique et valorise les actions sur le terrain."
+        )
+    }
+    var aiPrompt1 by remember(orgMap) { mutableStateOf(orgMap["ai_quick_prompt_1"] ?: "Comment réussir une pépinière durable en Côte d'Ivoire ?") }
+    var aiPrompt2 by remember(orgMap) { mutableStateOf(orgMap["ai_quick_prompt_2"] ?: "Quelles sont les meilleures essences d'arbres à planter ?") }
+    var aiPrompt3 by remember(orgMap) { mutableStateOf(orgMap["ai_quick_prompt_3"] ?: "Comment transformer les déchets plastiques en éco-pavés ?") }
+    var aiPrompt4 by remember(orgMap) { mutableStateOf(orgMap["ai_quick_prompt_4"] ?: "Comment devenir bénévole actif de l'ONG AIL4C ?") }
+
+    // Profile screen texts
+    var profileHeaderTitle by remember(orgMap) { mutableStateOf(orgMap["profile_header_title"] ?: "Mon Espace Éco-Citoyen") }
+    var profileDailyBonusText by remember(orgMap) { mutableStateOf(orgMap["profile_daily_bonus_text"] ?: "+5 Points Éco-Citoyens offerts à chaque connexion quotidienne !") }
+    var profileBadgesTitle by remember(orgMap) { mutableStateOf(orgMap["profile_badges_section_title"] ?: "Mes Badges & Niveaux d'Engagement") }
+
+    if (showAddKeyDialog) {
+        AdminAddCustomKeyDialog(
+            onDismiss = { showAddKeyDialog = false },
+            onConfirm = { k, v ->
+                viewModel.updateOrgInfo(k, v)
+                showAddKeyDialog = false
+                statusMessage = "Clé '$k' ajoutée et enregistrée avec succès !"
+            }
+        )
+    }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Toutes les Écritures & Textes de l'Application",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = AilForestDark
+                )
+                Text(
+                    text = "Modifiez absolument chaque écriture, titre, sous-titre, slogan, consigne IA et message de l'application dans les moindres détails.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(
+                onClick = { showAddKeyDialog = true },
+                modifier = Modifier
+                    .background(AilMint, CircleShape)
+                    .size(42.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Ajouter une clé", tint = AilForestDark)
+            }
+        }
+
+        if (statusMessage != null) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Surface(
+                color = AilMintLight,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AilEmerald, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(statusMessage!!, style = MaterialTheme.typography.bodySmall, color = AilEmeraldDark, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 1: Titres & Textes Écran Accueil
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Home, contentDescription = null, tint = AilForestGreen)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("1. Écritures de la Page d'Accueil & Footer", fontWeight = FontWeight.Bold, color = AilForestDark)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = homeWelcomeTitle,
+                    onValueChange = { homeWelcomeTitle = it },
+                    label = { Text("Titre de bienvenue utilisateur") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = homeWelcomeSubtitle,
+                    onValueChange = { homeWelcomeSubtitle = it },
+                    label = { Text("Sous-titre de bienvenue") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = homeQuizTitle,
+                    onValueChange = { homeQuizTitle = it },
+                    label = { Text("Titre de la carte Quiz sur l'accueil") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = homeQuizSubtitle,
+                    onValueChange = { homeQuizSubtitle = it },
+                    label = { Text("Sous-titre de la carte Quiz") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = homeQuizBtn,
+                    onValueChange = { homeQuizBtn = it },
+                    label = { Text("Texte du bouton Quiz Accueil") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = homeFooterSlogan,
+                    onValueChange = { homeFooterSlogan = it },
+                    label = { Text("Devise / Slogan du pied de page") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = homeFooterCopyright,
+                    onValueChange = { homeFooterCopyright = it },
+                    label = { Text("Mention légale / Copyright") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 2: Écritures Écran À Propos
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.TextFields, contentDescription = null, tint = AilEmerald)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("2. Titres & En-têtes Page 'À Propos'", fontWeight = FontWeight.Bold, color = AilForestDark)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = aboutHeroTag,
+                    onValueChange = { aboutHeroTag = it },
+                    label = { Text("Tag héroïque À Propos") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutMottoQuote,
+                    onValueChange = { aboutMottoQuote = it },
+                    label = { Text("Citation / Devise officielle") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutHistoryTitle,
+                    onValueChange = { aboutHistoryTitle = it },
+                    label = { Text("Titre section Historique") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutMissionTitle,
+                    onValueChange = { aboutMissionTitle = it },
+                    label = { Text("Titre section Mission") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutVisionTitle,
+                    onValueChange = { aboutVisionTitle = it },
+                    label = { Text("Titre section Vision") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutPillarsTitle,
+                    onValueChange = { aboutPillarsTitle = it },
+                    label = { Text("Titre section Piliers Stratégiques") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutGovernanceTitle,
+                    onValueChange = { aboutGovernanceTitle = it },
+                    label = { Text("Titre section Gouvernance") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutContactTitle,
+                    onValueChange = { aboutContactTitle = it },
+                    label = { Text("Titre section Coordonnées") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aboutPartnersTitle,
+                    onValueChange = { aboutPartnersTitle = it },
+                    label = { Text("Titre section Partenaires") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 3: Écritures Formations, Projets, Actualités, Actions
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.School, contentDescription = null, tint = AilTagTraining)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("3. En-têtes Formations, Projets & Événements", fontWeight = FontWeight.Bold, color = AilForestDark)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = trainingsHeaderTitle,
+                    onValueChange = { trainingsHeaderTitle = it },
+                    label = { Text("Titre En-tête Formations") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = trainingsHeaderSubtitle,
+                    onValueChange = { trainingsHeaderSubtitle = it },
+                    label = { Text("Sous-titre En-tête Formations") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = trainingsMentorsTitle,
+                    onValueChange = { trainingsMentorsTitle = it },
+                    label = { Text("Titre Section Mentors & Formateurs") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = trainingsNotice,
+                    onValueChange = { trainingsNotice = it },
+                    label = { Text("Note d'information aux candidats") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = projectsHeaderTitle,
+                    onValueChange = { projectsHeaderTitle = it },
+                    label = { Text("Titre En-tête Projets") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = projectsHeaderSubtitle,
+                    onValueChange = { projectsHeaderSubtitle = it },
+                    label = { Text("Sous-titre En-tête Projets") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = newsHeaderTitle,
+                    onValueChange = { newsHeaderTitle = it },
+                    label = { Text("Titre En-tête Actualités") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = newsHeaderSubtitle,
+                    onValueChange = { newsHeaderSubtitle = it },
+                    label = { Text("Sous-titre En-tête Actualités") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = actionsHeaderTitle,
+                    onValueChange = { actionsHeaderTitle = it },
+                    label = { Text("Titre En-tête Actions Terrain") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = actionsHeaderSubtitle,
+                    onValueChange = { actionsHeaderSubtitle = it },
+                    label = { Text("Sous-titre En-tête Actions Terrain") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 4: Assistant ÉcoBot IA & Instructions Personnalisées
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AilEmerald)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("4. ÉcoBot IA & Suggestions Rapides", fontWeight = FontWeight.Bold, color = AilForestDark)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = aiAssistantName,
+                    onValueChange = { aiAssistantName = it },
+                    label = { Text("Nom affiché de l'Assistant IA") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiWelcomeMessage,
+                    onValueChange = { aiWelcomeMessage = it },
+                    label = { Text("Message de premier accueil du Bot") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiPromptOverride,
+                    onValueChange = { aiPromptOverride = it },
+                    label = { Text("Directives / Consignes système de l'IA") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiPrompt1,
+                    onValueChange = { aiPrompt1 = it },
+                    label = { Text("Suggestion rapide #1") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiPrompt2,
+                    onValueChange = { aiPrompt2 = it },
+                    label = { Text("Suggestion rapide #2") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiPrompt3,
+                    onValueChange = { aiPrompt3 = it },
+                    label = { Text("Suggestion rapide #3") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = aiPrompt4,
+                    onValueChange = { aiPrompt4 = it },
+                    label = { Text("Suggestion rapide #4") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 5: Quiz Climat, Profil & Gamification
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.HelpOutline, contentDescription = null, tint = AilGold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("5. Quiz Climat & Profil Citoyen", fontWeight = FontWeight.Bold, color = AilForestDark)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = quizHeaderTitle,
+                    onValueChange = { quizHeaderTitle = it },
+                    label = { Text("Titre Écran Quiz") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = quizHeaderSubtitle,
+                    onValueChange = { quizHeaderSubtitle = it },
+                    label = { Text("Sous-titre Écran Quiz") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = quizRewardText,
+                    onValueChange = { quizRewardText = it },
+                    label = { Text("Texte toast de récompense (+10 pts)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = profileHeaderTitle,
+                    onValueChange = { profileHeaderTitle = it },
+                    label = { Text("Titre Écran Profil") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = profileDailyBonusText,
+                    onValueChange = { profileDailyBonusText = it },
+                    label = { Text("Texte du bonus de connexion (+5 pts)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Bouton Enregistrer Toutes les Écritures
+        Button(
+            onClick = {
+                val batch = mapOf(
+                    "home_welcome_title" to homeWelcomeTitle.trim(),
+                    "home_welcome_subtitle" to homeWelcomeSubtitle.trim(),
+                    "home_quiz_title" to homeQuizTitle.trim(),
+                    "home_quiz_subtitle" to homeQuizSubtitle.trim(),
+                    "home_quiz_btn" to homeQuizBtn.trim(),
+                    "home_footer_copyright" to homeFooterCopyright.trim(),
+                    "home_footer_slogan" to homeFooterSlogan.trim(),
+                    "about_hero_tag" to aboutHeroTag.trim(),
+                    "about_motto_quote" to aboutMottoQuote.trim(),
+                    "about_history_title" to aboutHistoryTitle.trim(),
+                    "about_mission_title" to aboutMissionTitle.trim(),
+                    "about_vision_title" to aboutVisionTitle.trim(),
+                    "about_pillars_title" to aboutPillarsTitle.trim(),
+                    "about_governance_title" to aboutGovernanceTitle.trim(),
+                    "about_contact_title" to aboutContactTitle.trim(),
+                    "about_partners_title" to aboutPartnersTitle.trim(),
+                    "trainings_header_title" to trainingsHeaderTitle.trim(),
+                    "trainings_header_subtitle" to trainingsHeaderSubtitle.trim(),
+                    "trainings_mentors_title" to trainingsMentorsTitle.trim(),
+                    "trainings_application_notice" to trainingsNotice.trim(),
+                    "projects_header_title" to projectsHeaderTitle.trim(),
+                    "projects_header_subtitle" to projectsHeaderSubtitle.trim(),
+                    "projects_call_to_action" to projectsCallToAction.trim(),
+                    "news_header_title" to newsHeaderTitle.trim(),
+                    "news_header_subtitle" to newsHeaderSubtitle.trim(),
+                    "actions_header_title" to actionsHeaderTitle.trim(),
+                    "actions_header_subtitle" to actionsHeaderSubtitle.trim(),
+                    "quiz_header_title" to quizHeaderTitle.trim(),
+                    "quiz_header_subtitle" to quizHeaderSubtitle.trim(),
+                    "quiz_daily_points_reward_text" to quizRewardText.trim(),
+                    "quiz_congrats_message" to quizCongratsMessage.trim(),
+                    "ai_assistant_name" to aiAssistantName.trim(),
+                    "ai_welcome_message" to aiWelcomeMessage.trim(),
+                    "ai_system_instructions_override" to aiPromptOverride.trim(),
+                    "ai_quick_prompt_1" to aiPrompt1.trim(),
+                    "ai_quick_prompt_2" to aiPrompt2.trim(),
+                    "ai_quick_prompt_3" to aiPrompt3.trim(),
+                    "ai_quick_prompt_4" to aiPrompt4.trim(),
+                    "profile_header_title" to profileHeaderTitle.trim(),
+                    "profile_daily_bonus_text" to profileDailyBonusText.trim(),
+                    "profile_badges_section_title" to profileBadgesTitle.trim()
+                )
+                viewModel.updateOrgInfoBatch(batch)
+                statusMessage = "Toutes les écritures de l'application ont été enregistrées avec succès !"
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AilForestGreen)
+        ) {
+            Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Enregistrer Toutes les Écritures Globales", fontWeight = FontWeight.Bold, color = Color.White)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // SECTION 6: Éditeur Universel Clé-Valeur en direct avec recherche
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Dictionnaire & Éditeur Universel Clé-Valeur",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AilForestDark
+                )
+                Text(
+                    text = "Recherchez ou modifiez n'importe quel paramètre ou texte stocké (${orgMap.size} clés actives).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = { showAddKeyDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = AilMint),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = AilForestDark, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Nouvelle Clé", color = AilForestDark, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Rechercher par clé ou par texte...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AilEmerald) },
+            trailingIcon = {
+                if (searchQuery.isNotBlank()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Close, contentDescription = "Effacer")
+                    }
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val filteredKeys = orgMap.keys.filter { key ->
+            val value = orgMap[key] ?: ""
+            searchQuery.isBlank() ||
+                    key.contains(searchQuery, ignoreCase = true) ||
+                    value.contains(searchQuery, ignoreCase = true)
+        }.sorted()
+
+        if (filteredKeys.isEmpty()) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = if (searchQuery.isBlank()) "Aucune clé enregistrée pour l'instant." else "Aucun résultat trouvé pour '$searchQuery'.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            filteredKeys.forEach { key ->
+                val currentValue = orgMap[key] ?: ""
+                var editingVal by remember(currentValue) { mutableStateOf(currentValue) }
+                val isModified = editingVal != currentValue
+
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(1.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = key,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AilEmeraldDark
+                            )
+                            if (isModified) {
+                                Surface(
+                                    color = AilSoftYellow,
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Modifié",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AilForestDark,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = editingVal,
+                            onValueChange = { editingVal = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = if (editingVal.length > 50) 2 else 1,
+                            maxLines = 6,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        if (isModified) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { editingVal = currentValue }) {
+                                    Text("Rétablir")
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        viewModel.updateOrgInfo(key, editingVal.trim())
+                                        statusMessage = "Clé '$key' mise à jour !"
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = AilEmerald),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Enregistrer '$key'", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

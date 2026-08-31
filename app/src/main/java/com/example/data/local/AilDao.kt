@@ -8,13 +8,16 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.data.model.AiChatMessageEntity
 import com.example.data.model.EcoActionEntity
+import com.example.data.model.EcoActivityRecordEntity
 import com.example.data.model.ImpactMetricEntity
 import com.example.data.model.MediaTestimonialEntity
+import com.example.data.model.MentorTrainerEntity
 import com.example.data.model.NewsArticleEntity
 import com.example.data.model.OrgInfoEntity
 import com.example.data.model.ProjectEntity
 import com.example.data.model.TrainingApplicationEntity
 import com.example.data.model.TrainingEntity
+import com.example.data.model.UserBadgeEntity
 import com.example.data.model.UserProfileEntity
 import com.example.data.model.VolunteerRegistrationEntity
 import kotlinx.coroutines.flow.Flow
@@ -180,6 +183,34 @@ interface AilDao {
     @Query("DELETE FROM media_testimonials WHERE id = :id")
     suspend fun deleteMediaTestimonialById(id: Long)
 
+    // --- Mentors & Formateurs ---
+    @Query("SELECT * FROM mentors_trainers ORDER BY displayOrder ASC, id ASC")
+    fun getAllMentorsTrainers(): Flow<List<MentorTrainerEntity>>
+
+    @Query("SELECT * FROM mentors_trainers WHERE isAvailableForMentoring = 1 ORDER BY displayOrder ASC, id ASC")
+    fun getAvailableMentors(): Flow<List<MentorTrainerEntity>>
+
+    @Query("SELECT * FROM mentors_trainers WHERE id = :id")
+    suspend fun getMentorTrainerById(id: Long): MentorTrainerEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMentorTrainer(mentor: MentorTrainerEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllMentorsTrainers(mentors: List<MentorTrainerEntity>)
+
+    @Update
+    suspend fun updateMentorTrainer(mentor: MentorTrainerEntity)
+
+    @Delete
+    suspend fun deleteMentorTrainer(mentor: MentorTrainerEntity)
+
+    @Query("DELETE FROM mentors_trainers WHERE id = :id")
+    suspend fun deleteMentorTrainerById(id: Long)
+
+    @Query("DELETE FROM mentors_trainers")
+    suspend fun deleteAllMentorsTrainers()
+
     // --- Bulk Clear Queries for Sync ---
     @Query("DELETE FROM news_articles")
     suspend fun deleteAllNews()
@@ -229,10 +260,51 @@ interface AilDao {
     @Query("SELECT * FROM ai_chat_messages ORDER BY id ASC")
     fun getAllAiMessages(): Flow<List<AiChatMessageEntity>>
 
+    @Query("SELECT * FROM ai_chat_messages ORDER BY id ASC")
+    suspend fun getAllAiMessagesList(): List<AiChatMessageEntity>
+
+    @Query("SELECT COUNT(*) FROM ai_chat_messages WHERE isFromUser = 1")
+    suspend fun getUserMessageCount(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAiMessage(message: AiChatMessageEntity): Long
 
     @Query("DELETE FROM ai_chat_messages")
     suspend fun clearAiMessages()
+
+    // --- Eco Activities Records ---
+    @Query("SELECT * FROM eco_activities ORDER BY completedTimestamp DESC")
+    fun getAllEcoActivities(): Flow<List<EcoActivityRecordEntity>>
+
+    @Query("SELECT * FROM eco_activities ORDER BY completedTimestamp DESC")
+    suspend fun getAllEcoActivitiesList(): List<EcoActivityRecordEntity>
+
+    @Query("SELECT * FROM eco_activities WHERE activityKey LIKE :keyPattern LIMIT 1")
+    suspend fun getEcoActivityByKeyPattern(keyPattern: String): EcoActivityRecordEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEcoActivity(activity: EcoActivityRecordEntity): Long
+
+    @Query("DELETE FROM eco_activities")
+    suspend fun deleteAllEcoActivities()
+
+    // --- User Badges ---
+    @Query("SELECT * FROM user_badges ORDER BY requiredPoints ASC")
+    fun getAllBadges(): Flow<List<UserBadgeEntity>>
+
+    @Query("SELECT * FROM user_badges WHERE badgeId = :badgeId LIMIT 1")
+    suspend fun getBadgeById(badgeId: String): UserBadgeEntity?
+
+    @Query("SELECT * FROM user_badges WHERE isUnlocked = 1 ORDER BY requiredPoints ASC")
+    fun getUnlockedBadges(): Flow<List<UserBadgeEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBadge(badge: UserBadgeEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllBadges(badges: List<UserBadgeEntity>)
+
+    @Update
+    suspend fun updateBadge(badge: UserBadgeEntity)
 }
 

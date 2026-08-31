@@ -39,7 +39,11 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Public
 import com.example.ui.theme.AilEmeraldDark
 import com.example.ui.theme.AilEmeraldLight
 import com.example.ui.theme.AilLeafGreen
@@ -48,6 +52,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -279,6 +284,88 @@ fun HomeScreen(
             }
         }
 
+        // 0.2 Daily Quiz & Eco-Citizenship Challenge Banner
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable {
+                        viewModel.navigateTo(AppScreen.QUIZ)
+                    }
+                    .testTag("home_quiz_challenge_banner"),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.3f)),
+                elevation = CardDefaults.cardElevation(1.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(0xFF047857), Color(0xFF10B981))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Psychology,
+                            contentDescription = "Quiz Climat",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Quiz Climat Quotidien 🎯",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF047857)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                color = Color(0xFF10B981).copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = "+45 pts",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF047857),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Testez vos connaissances du jour, gagnez des points éco-citoyens et débloquez de nouveaux badges !",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.DarkGray,
+                            fontSize = 11.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Participer au Quiz",
+                        tint = Color(0xFF047857),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
         // 1. Search Bar
         item {
             ModernSearchBar(
@@ -297,27 +384,84 @@ fun HomeScreen(
             )
         }
 
-        // 3. Spotlight Hero Card
+        // 3. Activités à la Une (Featured Eco-Activities Dynamic Carousel)
+        val featuredActionsList = allActions.filter { act ->
+            val matchesCategory = if (selectedCategory == "Tous") true
+            else act.category.contains(selectedCategory, ignoreCase = true) || act.title.contains(selectedCategory, ignoreCase = true)
+
+            val matchesSearch = if (searchQuery.isBlank()) true
+            else act.title.contains(searchQuery, ignoreCase = true) ||
+                 act.location.contains(searchQuery, ignoreCase = true) ||
+                 act.category.contains(searchQuery, ignoreCase = true) ||
+                 act.description.contains(searchQuery, ignoreCase = true)
+
+            matchesCategory && matchesSearch
+        }
+
         item {
-            val heroTitle = orgMap["home_hero_title"] ?: "Grande Campagne : 25 000 Arbres pour le Climat"
-            val heroSubtitle = orgMap["home_hero_subtitle"] ?: "Avec la jeunesse citoyenne & l'appui de l'UNFPA"
-            val heroCategory = orgMap["home_hero_category"] ?: "Reboisement"
-            val heroImage = orgMap["home_hero_image"] ?: "img_hero_reforestation"
-            val heroProgressLabel = orgMap["home_hero_progress_label"] ?: "12 500 / 25 000 Arbres plantés"
-            val heroProgressRatio = (orgMap["home_hero_progress_percent"]?.toFloatOrNull() ?: 50f) / 100f
+            val featuredActionsTitle = orgMap["home_featured_actions_title"] ?: "Activités à la Une"
+            val featuredActionsSubtitle = orgMap["home_featured_actions_subtitle"] ?: "Mobilisations citoyennes & actions de terrain"
 
             Spacer(modifier = Modifier.height(4.dp))
-            SpotlightHeroCard(
-                title = heroTitle,
-                subtitle = heroSubtitle,
-                category = heroCategory,
-                imageName = heroImage,
-                progress = heroProgressRatio.coerceIn(0f, 1f),
-                progressLabel = heroProgressLabel,
-                onPlayActionClick = {
-                    viewModel.navigateTo(AppScreen.ACTIONS)
-                }
+            SectionHeader(
+                title = featuredActionsTitle,
+                subtitle = featuredActionsSubtitle,
+                actionLabel = "Voir tout",
+                onActionClick = { viewModel.navigateTo(AppScreen.ACTIONS) }
             )
+        }
+
+        if (featuredActionsList.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Eco,
+                            contentDescription = null,
+                            tint = AilEmerald,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Aucune activité trouvée pour ce filtre. Consultez toutes les mobilisations citoyennes.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        } else {
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.testTag("home_featured_actions_row")
+                ) {
+                    items(featuredActionsList) { action ->
+                        FeaturedActivityHeroCard(
+                            action = action,
+                            onClick = {
+                                viewModel.selectAction(action)
+                                viewModel.navigateTo(AppScreen.ACTIONS)
+                            },
+                            onParticipateClick = {
+                                viewModel.selectAction(action)
+                                viewModel.navigateTo(AppScreen.ACTIONS)
+                            },
+                            modifier = Modifier.width(310.dp)
+                        )
+                    }
+                }
+            }
         }
 
         // 4. Weekly Eco-Streak Widget
@@ -333,7 +477,7 @@ fun HomeScreen(
         item {
             Spacer(modifier = Modifier.height(12.dp))
             SectionHeader(
-                title = "Actions & Projets Phares",
+                title = orgMap["home_featured_projects_title"] ?: "Actions & Projets Phares",
                 subtitle = "Recommandés pour votre engagement",
                 actionLabel = "Voir tout",
                 onActionClick = { viewModel.navigateTo(AppScreen.PROJECTS) }
@@ -370,7 +514,7 @@ fun HomeScreen(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 SectionHeader(
-                    title = "Notre Impact Écologique & Social",
+                    title = orgMap["home_impact_title"] ?: "Notre Impact Écologique & Social",
                     subtitle = "Des résultats concrets mesurés sur le terrain"
                 )
                 LazyRow(
@@ -394,7 +538,7 @@ fun HomeScreen(
         item {
             Spacer(modifier = Modifier.height(16.dp))
             SectionHeader(
-                title = "Mentors & Formateurs AIL4C",
+                title = orgMap["home_mentors_title"] ?: "Mentors & Formateurs AIL4C",
                 subtitle = "Des experts mobilisés pour former la jeunesse",
                 actionLabel = "Formations",
                 onActionClick = { viewModel.navigateTo(AppScreen.TRAININGS) }
@@ -426,7 +570,7 @@ fun HomeScreen(
         item {
             Spacer(modifier = Modifier.height(16.dp))
             SectionHeader(
-                title = "Événements à Venir",
+                title = orgMap["home_events_title"] ?: "Événements à Venir",
                 subtitle = "Participez aux prochaines mobilisations citoyennes",
                 actionLabel = "Voir tout",
                 onActionClick = { viewModel.navigateTo(AppScreen.ACTIONS) }
@@ -725,6 +869,29 @@ fun HomeScreen(
                             Text("À Propos", color = AilEmerald, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Dedicated button to visit official website
+                    Button(
+                        onClick = {
+                            try {
+                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ongail4csiteweb.netlify.app/"))
+                                context.startActivity(webIntent)
+                            } catch (_: Exception) {
+                                viewModel.showToast("Site web : https://ongail4csiteweb.netlify.app/")
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF047857)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("home_visit_website_btn")
+                    ) {
+                        Icon(Icons.Default.Public, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Visiter le Site Web Officiel de l'ONG", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
                 }
             }
         }
@@ -847,3 +1014,196 @@ fun HomeNewsCard(
         }
     }
 }
+
+@Composable
+fun FeaturedActivityHeroCard(
+    action: EcoActionEntity,
+    onClick: () -> Unit,
+    onParticipateClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .testTag("featured_activity_hero_card_${action.id}")
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(210.dp)
+        ) {
+            ResolveImage(
+                imageName = action.imageResName,
+                contentDescription = action.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // Gradient Overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.35f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.88f)
+                            )
+                        )
+                    )
+            )
+
+            // Top row: category badge + status badge
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = AilEmeraldDark.copy(alpha = 0.85f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Eco,
+                            contentDescription = null,
+                            tint = AilMintLight,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = action.category.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Surface(
+                    color = when (action.status.lowercase()) {
+                        "en cours", "actif" -> Color(0xFF10B981)
+                        "à venir" -> Color(0xFFF59E0B)
+                        else -> Color(0xFF6B7280)
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = action.status,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            // Bottom Content
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(14.dp)
+            ) {
+                Text(
+                    text = action.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = AilMintLight,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${action.location} • ${action.dateText}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Surface(
+                        onClick = onParticipateClick,
+                        color = AilEmerald,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text = "Participer",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+                    }
+                }
+
+                if (action.maxSpots > 0) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    val progressRatio = (action.registeredCount.toFloat() / action.maxSpots.toFloat()).coerceIn(0f, 1f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        LinearProgressIndicator(
+                            progress = { progressRatio },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp)),
+                            color = AilEmerald,
+                            trackColor = Color.White.copy(alpha = 0.3f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${action.registeredCount}/${action.maxSpots} bénévoles",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+

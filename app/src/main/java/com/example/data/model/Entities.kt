@@ -148,3 +148,46 @@ data class AiChatMessageEntity(
     val timestamp: Long = System.currentTimeMillis(),
     val quickActionType: String? = null
 )
+
+@Entity(tableName = "mentors_trainers")
+data class MentorTrainerEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val fullName: String,
+    val roleTitle: String = "Formateur & Expert Climat",
+    val category: String = "Formateur", // "Formateur", "Mentor", "Formatrice & Mentore", "Expert Climat"
+    val specialty: String = "",
+    val bio: String = "",
+    val experienceYears: Int = 5,
+    val phone: String = "+225 ",
+    val email: String = "",
+    val location: String = "Bouaké, Côte d'Ivoire",
+    val photoResName: String = "avatar_user",
+    val isAvailableForMentoring: Boolean = true,
+    val displayOrder: Int = 0
+)
+
+@Entity(tableName = "eco_activities")
+data class EcoActivityRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val activityKey: String, // e.g. "TREE_PLANTED", "PLASTIC_RECYCLED", "COMPOST_MADE", "ENERGY_SAVED", "CLEANUP_DONE", "WATER_SAVED", "QUIZ_COMPLETED", "AIL4C_SHARE"
+    val title: String,
+    val category: String, // "Agroforesterie", "Recyclage", "Énergie & Eau", "Salubrité", "Sensibilisation", "Quiz Climat"
+    val pointsAwarded: Int,
+    val description: String,
+    val completedTimestamp: Long = System.currentTimeMillis(),
+    val iconKey: String = "Eco"
+)
+
+@Entity(tableName = "user_badges")
+data class UserBadgeEntity(
+    @PrimaryKey val badgeId: String,
+    val title: String,
+    val description: String,
+    val requiredPoints: Int,
+    val iconKey: String, // e.g. "Seed", "Guardian", "Planter", "Recycle", "Solar", "Scholar", "Ambassador", "Hero"
+    val tierLevel: String, // "Bronze", "Argent", "Or", "Platine", "Diamant"
+    val isUnlocked: Boolean = false,
+    val unlockedTimestamp: Long? = null,
+    val isCelebrationSeen: Boolean = false
+)
+
