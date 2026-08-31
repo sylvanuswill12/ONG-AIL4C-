@@ -455,50 +455,6 @@ fun AuthScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                             singleLine = true
                         )
-
-                        // Quick suggestion for admins
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Admin :",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.Gray,
-                                fontSize = 10.sp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                onClick = { email = "atchouyaosylvain59@gmail.com" },
-                                shape = RoundedCornerShape(8.dp),
-                                color = AilMintBackground
-                            ) {
-                                Text(
-                                    text = "atchouyaosylvain59@...",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = AilEmeraldDark,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Surface(
-                                onClick = { email = "ail4c03@gmail.com" },
-                                shape = RoundedCornerShape(8.dp),
-                                color = AilMintBackground
-                            ) {
-                                Text(
-                                    text = "ail4c03@...",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = AilEmeraldDark,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))

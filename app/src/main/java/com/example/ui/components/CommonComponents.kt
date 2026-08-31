@@ -1490,7 +1490,6 @@ fun AdminLoginDialog(
                     value = pin,
                     onValueChange = { pin = it },
                     label = { Text("Mot de passe Admin") },
-                    placeholder = { Text("Ex: AIL4CCI") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,

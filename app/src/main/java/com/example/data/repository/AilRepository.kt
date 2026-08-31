@@ -131,10 +131,14 @@ class AilRepository(
 
         val isPredefinedAdmin = normalizedId in listOf(
             "atchouyaosylvain59@gmail.com",
-            "ail4c03@gmail.com",
-            "sylvainy154@gmail.com",
-            "admin@ail4c-ci.org"
+            "ail4c03@gmail.com"
         )
+
+        if (isPredefinedAdmin) {
+            if (!password.trim().equals("AIL4CCI", ignoreCase = true)) {
+                return AuthResult.Error("Mot de passe incorrect. Veuillez réessayer.")
+            }
+        }
 
         val account = dao.getUserAccountById(normalizedId)
             ?: dao.getUserAccountByPhone(cleanIdentifier)
@@ -163,7 +167,7 @@ class AilRepository(
             return AuthResult.Error("Aucun compte trouvé avec cet identifiant. Veuillez créer votre compte d'abord.")
         }
 
-        if (account.password.isNotBlank() && password.isNotBlank() && account.password != password) {
+        if (!isPredefinedAdmin && account.password.isNotBlank() && password.isNotBlank() && account.password != password.trim()) {
             return AuthResult.Error("Mot de passe incorrect. Veuillez réessayer.")
         }
 

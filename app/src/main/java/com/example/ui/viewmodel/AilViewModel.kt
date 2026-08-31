@@ -535,7 +535,7 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val trimmedPin = pin.trim()
-        val isValid = trimmedPin.equals("AIL4CCI", ignoreCase = true) || trimmedPin == "1975" || trimmedPin == "admin"
+        val isValid = trimmedPin.equals("AIL4CCI", ignoreCase = true)
         if (isValid) {
             _isAdminLoggedIn.value = true
             showToast("Accès administrateur validé avec succès !")
