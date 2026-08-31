@@ -2,7 +2,6 @@ package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,8 +27,10 @@ import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -38,11 +38,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -67,7 +65,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -95,12 +92,12 @@ fun AuthScreen(
     var phoneNumber by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
     var fullName by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("Bouaké") }
     var quartier by remember { mutableStateOf("Commerce") }
-    var isOtpSent by remember { mutableStateOf(false) }
-    var otpCode by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
 
@@ -111,7 +108,7 @@ fun AuthScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (isRegisterMode) "Créer un compte Éco-Citoyen" else "Espace Connexion",
+                        text = if (isRegisterMode) "Créer un compte Éco-Citoyen" else "Authentification Obligatoire",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
@@ -148,7 +145,7 @@ fun AuthScreen(
             // Header Logo & Mission
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(68.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -161,28 +158,58 @@ fun AuthScreen(
                     imageVector = Icons.Default.Eco,
                     contentDescription = "AIL4C Logo",
                     tint = Color.White,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(38.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "ONG AIL4C",
-                style = MaterialTheme.typography.titleLarge,
+                text = "ONG AIL4C CÔTE D'IVOIRE",
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = AilEmeraldDark
             )
 
             Text(
-                text = "Rejoignez le réseau des jeunes engagés pour le climat et l'emploi vert en Côte d'Ivoire",
+                text = "Pour accéder à l'application, l'authentification est obligatoire. Les nouveaux utilisateurs doivent impérativement s'inscrire.",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 20.dp),
+                color = Color.DarkGray,
+                modifier = Modifier.padding(horizontal = 16.dp),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Cloud Database Badge Indicator
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = AilEmeraldLight.copy(alpha = 0.7f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AilEmerald.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudDone,
+                        contentDescription = null,
+                        tint = AilEmeraldDark,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Google Cloud & Firebase Database • Sécurité Active",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AilEmeraldDark,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Mode Selector: Inscription vs Connexion
             Row(
@@ -236,14 +263,14 @@ fun AuthScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Main Auth Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(2.dp)
+                elevation = CardDefaults.cardElevation(3.dp)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     // Method Tabs (Phone vs Email)
@@ -258,8 +285,7 @@ fun AuthScreen(
                                 height = 3.dp
                             )
                         },
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.clip(RoundedCornerShape(12.dp))
                     ) {
                         Tab(
                             selected = selectedMethodTab == 0,
@@ -274,7 +300,7 @@ fun AuthScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Numéro 🇨🇮",
+                                        text = "Téléphone 🇨🇮",
                                         fontWeight = if (selectedMethodTab == 0) FontWeight.Bold else FontWeight.Normal,
                                         color = if (selectedMethodTab == 0) AilEmerald else Color.Gray
                                     )
@@ -304,9 +330,9 @@ fun AuthScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // Registration extra fields
+                    // Registration extra fields (Full Name, City, Quartier)
                     AnimatedVisibility(visible = isRegisterMode) {
                         Column {
                             OutlinedTextField(
@@ -371,12 +397,12 @@ fun AuthScreen(
                         }
                     }
 
-                    // Tab 0: Phone Number Connection
+                    // Main input field (Phone or Email)
                     if (selectedMethodTab == 0) {
                         OutlinedTextField(
                             value = phoneNumber,
                             onValueChange = { phoneNumber = it },
-                            label = { Text("Numéro de téléphone ivoirien *") },
+                            label = { Text("Numéro de téléphone (+225) *") },
                             placeholder = { Text("Ex: 07 89 71 02 89") },
                             leadingIcon = {
                                 Row(
@@ -409,72 +435,12 @@ fun AuthScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                             singleLine = true
                         )
-
-                        if (isOtpSent) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            OutlinedTextField(
-                                value = otpCode,
-                                onValueChange = { otpCode = it },
-                                label = { Text("Code de confirmation reçu par SMS") },
-                                placeholder = { Text("Ex: 123456") },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Key, contentDescription = null, tint = AilEmerald)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("auth_otp_input"),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AilEmerald,
-                                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
-                                ),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        Button(
-                            onClick = {
-                                if (phoneNumber.isBlank()) {
-                                    viewModel.showToast("Veuillez saisir votre numéro de téléphone")
-                                } else if (isRegisterMode && fullName.isBlank()) {
-                                    viewModel.showToast("Veuillez renseigner votre nom et prénoms pour l'inscription")
-                                } else {
-                                    viewModel.loginWithPhone(
-                                        phoneNumber = phoneNumber,
-                                        fullName = fullName.ifBlank { "Éco-Volontaire (+225 $phoneNumber)" },
-                                        city = city,
-                                        quartier = quartier
-                                    )
-                                    onBack?.invoke()
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .testTag("auth_submit_phone_button"),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AilEmerald)
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isRegisterMode) "Créer mon compte éco-citoyen" else "Se connecter par téléphone",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-
-                    // Tab 1: Email & Password Connection
-                    if (selectedMethodTab == 1) {
+                    } else {
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
                             label = { Text("Adresse Email *") },
-                            placeholder = { Text("Ex: membre@ail4c-ci.org") },
+                            placeholder = { Text("Ex: membre@ongail4c.com") },
                             leadingIcon = {
                                 Icon(Icons.Default.Email, contentDescription = null, tint = AilEmerald)
                             },
@@ -490,15 +456,14 @@ fun AuthScreen(
                             singleLine = true
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
                         // Quick suggestion for admins
+                        Spacer(modifier = Modifier.height(6.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Comptes Admin :",
+                                text = "Admin :",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color.Gray,
                                 fontSize = 10.sp
@@ -534,29 +499,64 @@ fun AuthScreen(
                                 )
                             }
                         }
+                    }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
+                    // Password Field
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(if (isRegisterMode) "Créer un mot de passe *" else "Mot de passe *") },
+                        placeholder = { Text("4 caractères minimum") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Key, contentDescription = null, tint = AilEmerald)
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = "Afficher mot de passe",
+                                    tint = Color.Gray
+                                )
+                            }
+                        },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("auth_password_input"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AilEmerald,
+                            unfocusedBorderColor = Color.LightGray.copy(alpha = 0.8f)
+                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true
+                    )
+
+                    // Confirm password for registration
+                    if (isRegisterMode) {
+                        Spacer(modifier = Modifier.height(12.dp))
                         OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = { Text("Mot de passe") },
+                            value = confirmPassword,
+                            onValueChange = { confirmPassword = it },
+                            label = { Text("Confirmer le mot de passe *") },
                             leadingIcon = {
-                                Icon(Icons.Default.Key, contentDescription = null, tint = AilEmerald)
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = AilEmerald)
                             },
                             trailingIcon = {
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                                     Icon(
-                                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                         contentDescription = "Afficher mot de passe",
                                         tint = Color.Gray
                                     )
                                 }
                             },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .testTag("auth_password_input"),
+                                .testTag("auth_confirm_password_input"),
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = AilEmerald,
@@ -565,40 +565,63 @@ fun AuthScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true
                         )
+                    }
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
-                        Button(
-                            onClick = {
-                                if (email.isBlank() || !email.contains("@")) {
-                                    viewModel.showToast("Veuillez saisir une adresse email valide")
-                                } else if (isRegisterMode && fullName.isBlank()) {
-                                    viewModel.showToast("Veuillez renseigner votre nom et prénoms pour l'inscription")
+                    // Submit Button
+                    Button(
+                        onClick = {
+                            val authType = if (selectedMethodTab == 0) "PHONE" else "EMAIL"
+                            val identifier = if (selectedMethodTab == 0) phoneNumber.trim() else email.trim()
+
+                            if (isRegisterMode) {
+                                if (fullName.isBlank()) {
+                                    viewModel.showToast("Veuillez renseigner votre nom et prénoms.")
+                                } else if (identifier.isBlank()) {
+                                    viewModel.showToast(if (selectedMethodTab == 0) "Veuillez renseigner votre numéro de téléphone." else "Veuillez renseigner votre email.")
+                                } else if (password.length < 4) {
+                                    viewModel.showToast("Le mot de passe doit contenir au moins 4 caractères.")
+                                } else if (password != confirmPassword) {
+                                    viewModel.showToast("Les deux mots de passe ne correspondent pas.")
                                 } else {
-                                    viewModel.loginWithEmail(
-                                        email = email,
-                                        fullName = fullName.ifBlank { email.substringBefore("@") },
+                                    viewModel.registerUser(
+                                        fullName = fullName,
+                                        identifier = identifier,
+                                        authType = authType,
+                                        password = password,
                                         city = city,
-                                        quartier = quartier
+                                        quartier = quartier,
+                                        onSuccess = { onBack?.invoke() }
                                     )
-                                    onBack?.invoke()
                                 }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .testTag("auth_submit_email_button"),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AilEmerald)
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isRegisterMode) "Créer mon compte par email" else "Se connecter par email",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
+                            } else {
+                                if (identifier.isBlank()) {
+                                    viewModel.showToast(if (selectedMethodTab == 0) "Veuillez saisir votre numéro de téléphone." else "Veuillez saisir votre email.")
+                                } else {
+                                    viewModel.loginUser(
+                                        identifier = identifier,
+                                        authType = authType,
+                                        password = password,
+                                        onSuccess = { onBack?.invoke() }
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .testTag("auth_submit_button"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AilEmerald)
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isRegisterMode) "Créer mon compte éco-citoyen" else "Se connecter à mon compte",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -616,7 +639,7 @@ fun AuthScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (isRegisterMode) "Se connecter" else "S'inscrire gratuitement",
+                            text = if (isRegisterMode) "Se connecter" else "S'inscrire impérativement",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = AilEmeraldDark,
@@ -629,117 +652,32 @@ fun AuthScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Quick Demo & Guest options
-            Text(
-                text = "OU ACCÉDER DIRECTEMENT",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Fast Demo Login Button
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        viewModel.loginWithPhone(
-                            phoneNumber = "07 89 71 02 89",
-                            fullName = "Aka Ezéchiel (Membre Actif)",
-                            city = "Bouaké",
-                            quartier = "Tchelekro"
-                        )
-                        onBack?.invoke()
-                    }
-                    .testTag("auth_demo_login_button"),
-                shape = RoundedCornerShape(16.dp),
-                color = AilEmeraldLight,
-                border = androidx.compose.foundation.BorderStroke(1.dp, AilEmerald.copy(alpha = 0.4f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(AilEmerald),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudDone,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Connexion Rapide Démo • Bénévole Engagé",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AilEmeraldDark
-                        )
-                        Text(
-                            text = "Accéder immédiatement avec le profil pré-configuré",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.DarkGray,
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Guest Mode
-            OutlinedButton(
-                onClick = {
-                    viewModel.loginAsGuest()
-                    onBack?.invoke()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("auth_guest_button"),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.DarkGray
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
-            ) {
-                Text(
-                    text = "Continuer en mode Invité / Découverte",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Security badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+            // Security & Privacy Info
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White.copy(alpha = 0.85f),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.CloudDone,
-                    contentDescription = null,
-                    tint = AilEmerald,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Données protégées • ONG AIL4C Côte d'Ivoire",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
-                    fontSize = 11.sp
-                )
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Security,
+                        contentDescription = null,
+                        tint = AilEmerald,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Authentification chiffrée et synchronisée avec la base de données Google Cloud & Firebase AIL4C.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.DarkGray,
+                        fontSize = 11.sp
+                    )
+                }
             }
         }
     }

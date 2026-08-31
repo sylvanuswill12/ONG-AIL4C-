@@ -16,6 +16,7 @@ import com.example.data.model.QuizBank
 import com.example.data.model.QuizQuestion
 import com.example.data.model.TrainingApplicationEntity
 import com.example.data.model.TrainingEntity
+import com.example.data.model.UserAccountEntity
 import com.example.data.model.UserBadgeEntity
 import com.example.data.model.UserProfileEntity
 import com.example.data.model.VolunteerRegistrationEntity
@@ -46,6 +47,144 @@ class AilRepository(
 
     // --- User Profile & Auth ---
     val currentUserProfile: Flow<UserProfileEntity?> = dao.getCurrentUserProfile()
+    val allUserAccounts: Flow<List<UserAccountEntity>> = dao.getAllUserAccounts()
+
+    suspend fun registerUser(
+        fullName: String,
+        identifier: String,
+        authType: String,
+        password: String,
+        city: String = "Bouaké",
+        quartier: String = "Commerce"
+    ): AuthResult {
+        val cleanIdentifier = identifier.trim()
+        val cleanName = fullName.trim()
+        if (cleanName.isBlank()) {
+            return AuthResult.Error("Veuillez renseigner votre nom et prénoms complets.")
+        }
+        if (cleanIdentifier.isBlank()) {
+            return AuthResult.Error("Veuillez renseigner votre identifiant (téléphone ou email).")
+        }
+        if (password.length < 4) {
+            return AuthResult.Error("Le mot de passe doit contenir au moins 4 caractères.")
+        }
+
+        val normalizedId = cleanIdentifier.lowercase()
+        val existing = dao.getUserAccountById(normalizedId)
+            ?: dao.getUserAccountByPhone(cleanIdentifier)
+            ?: dao.getUserAccountByEmail(cleanIdentifier)
+            
+        if (existing != null) {
+            return AuthResult.Error("Un compte existe déjà avec cet identifiant. Veuillez vous connecter.")
+        }
+
+        val phone = if (authType == "PHONE") cleanIdentifier else ""
+        val email = if (authType == "EMAIL") cleanIdentifier else ""
+
+        val account = UserAccountEntity(
+            id = normalizedId,
+            fullName = cleanName,
+            identifier = cleanIdentifier,
+            authType = authType,
+            phoneNumber = phone,
+            email = email,
+            password = password,
+            city = city.ifBlank { "Bouaké" },
+            quartier = quartier.ifBlank { "Commerce" },
+            ecoPoints = 50,
+            volunteerLevel = "Éco-Volontaire Engagé",
+            registeredDate = "Août 2026",
+            registeredTimestamp = System.currentTimeMillis()
+        )
+        dao.insertUserAccount(account)
+
+        val profile = UserProfileEntity(
+            id = "current_user",
+            fullName = cleanName,
+            identifier = cleanIdentifier,
+            authType = authType,
+            phoneNumber = phone,
+            email = email,
+            city = city.ifBlank { "Bouaké" },
+            quartier = quartier.ifBlank { "Commerce" },
+            ecoPoints = 50,
+            volunteerLevel = "Éco-Volontaire Engagé",
+            avatarResName = "avatar_user",
+            isLoggedIn = true,
+            joinedDate = "Août 2026"
+        )
+        dao.saveUserProfile(profile)
+        syncEngine?.notifyCloudItemCreated("UserAccount", normalizedId)
+        return AuthResult.Success(profile)
+    }
+
+    suspend fun loginUser(
+        identifier: String,
+        authType: String,
+        password: String
+    ): AuthResult {
+        val cleanIdentifier = identifier.trim()
+        if (cleanIdentifier.isBlank()) {
+            return AuthResult.Error("Veuillez renseigner votre numéro de téléphone ou votre adresse email.")
+        }
+        val normalizedId = cleanIdentifier.lowercase()
+
+        val isPredefinedAdmin = normalizedId in listOf(
+            "atchouyaosylvain59@gmail.com",
+            "ail4c03@gmail.com",
+            "sylvainy154@gmail.com",
+            "admin@ail4c-ci.org"
+        )
+
+        val account = dao.getUserAccountById(normalizedId)
+            ?: dao.getUserAccountByPhone(cleanIdentifier)
+            ?: dao.getUserAccountByEmail(cleanIdentifier)
+
+        if (account == null) {
+            if (isPredefinedAdmin) {
+                val adminProfile = UserProfileEntity(
+                    id = "current_user",
+                    fullName = if (normalizedId.contains("sylvain")) "Sylvain Atchouyao (Admin)" else "Administrateur AIL4C",
+                    identifier = cleanIdentifier,
+                    authType = "EMAIL",
+                    phoneNumber = "+225 07 89 71 02 89",
+                    email = cleanIdentifier,
+                    city = "Bouaké",
+                    quartier = "Gbêkê",
+                    ecoPoints = 500,
+                    volunteerLevel = "Administrateur National",
+                    avatarResName = "avatar_user",
+                    isLoggedIn = true,
+                    joinedDate = "Août 2026"
+                )
+                dao.saveUserProfile(adminProfile)
+                return AuthResult.Success(adminProfile)
+            }
+            return AuthResult.Error("Aucun compte trouvé avec cet identifiant. Veuillez créer votre compte d'abord.")
+        }
+
+        if (account.password.isNotBlank() && password.isNotBlank() && account.password != password) {
+            return AuthResult.Error("Mot de passe incorrect. Veuillez réessayer.")
+        }
+
+        val profile = UserProfileEntity(
+            id = "current_user",
+            fullName = account.fullName,
+            identifier = account.identifier,
+            authType = account.authType,
+            phoneNumber = account.phoneNumber,
+            email = account.email,
+            city = account.city,
+            quartier = account.quartier,
+            ecoPoints = account.ecoPoints,
+            volunteerLevel = account.volunteerLevel,
+            avatarResName = "avatar_user",
+            isLoggedIn = true,
+            joinedDate = account.registeredDate
+        )
+        dao.saveUserProfile(profile)
+        return AuthResult.Success(profile)
+    }
 
     suspend fun loginWithPhone(phoneNumber: String, fullName: String, city: String = "Bouaké", quartier: String = "Commerce"): UserProfileEntity {
         val cleanPhone = phoneNumber.trim()
@@ -594,31 +733,9 @@ class AilRepository(
 
         // 3. Mentors & Formateurs are created strictly by the Admin
 
-        // 4. Seed Initial Logged User if not existing
-        val existingUser = dao.getCurrentUser()
-        val currentPoints = existingUser?.ecoPoints ?: 50
-        if (existingUser == null) {
-            dao.saveUserProfile(
-                UserProfileEntity(
-                    id = "current_user",
-                    fullName = "Éco-Citoyen",
-                    identifier = "+225 07 00 00 00",
-                    authType = "PHONE",
-                    phoneNumber = "+225 07 00 00 00",
-                    email = "citoyen@ongail4c.com",
-                    city = "Bouaké",
-                    quartier = "Commerce",
-                    ecoPoints = 50,
-                    volunteerLevel = "Éco-Gardien Actif",
-                    avatarResName = "avatar_user",
-                    isLoggedIn = true,
-                    joinedDate = "Août 2026"
-                )
-            )
-        }
-
-        // 5. Seed Badges Catalog if empty
+        // 4. Do NOT auto-login user - strict authentication is mandatory at startup
         val existingBadges = dao.getAllBadges().firstOrNull() ?: emptyList()
+        val currentPoints = 50
         if (existingBadges.isEmpty()) {
             val defaultBadges = listOf(
                 UserBadgeEntity(
@@ -736,3 +853,9 @@ class AilRepository(
         }
     }
 }
+
+sealed class AuthResult {
+    data class Success(val profile: UserProfileEntity) : AuthResult()
+    data class Error(val message: String) : AuthResult()
+}
+

@@ -123,6 +123,23 @@ data class OrgInfoEntity(
     val value: String
 )
 
+@Entity(tableName = "user_accounts")
+data class UserAccountEntity(
+    @PrimaryKey val id: String, // Normalized phone or email
+    val fullName: String,
+    val identifier: String,
+    val authType: String = "PHONE", // "PHONE", "EMAIL"
+    val phoneNumber: String = "",
+    val email: String = "",
+    val password: String = "",
+    val city: String = "Bouaké",
+    val quartier: String = "Commerce",
+    val ecoPoints: Int = 50,
+    val volunteerLevel: String = "Éco-Volontaire Engagé",
+    val registeredDate: String = "Août 2026",
+    val registeredTimestamp: Long = System.currentTimeMillis()
+)
+
 @Entity(tableName = "user_profile")
 data class UserProfileEntity(
     @PrimaryKey val id: String = "current_user",

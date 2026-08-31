@@ -15,6 +15,7 @@ import com.example.data.model.OrgInfoEntity
 import com.example.data.model.ProjectEntity
 import com.example.data.model.TrainingApplicationEntity
 import com.example.data.model.TrainingEntity
+import com.example.data.model.UserAccountEntity
 import com.example.data.model.UserBadgeEntity
 import com.example.data.model.UserProfileEntity
 import com.example.data.model.VolunteerRegistrationEntity
@@ -30,13 +31,14 @@ import com.example.data.model.VolunteerRegistrationEntity
         ImpactMetricEntity::class,
         MediaTestimonialEntity::class,
         OrgInfoEntity::class,
+        UserAccountEntity::class,
         UserProfileEntity::class,
         AiChatMessageEntity::class,
         MentorTrainerEntity::class,
         EcoActivityRecordEntity::class,
         UserBadgeEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AilDatabase : RoomDatabase() {

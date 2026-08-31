@@ -308,6 +308,59 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- User Authentication (Phone or Email) ---
+    fun registerUser(
+        fullName: String,
+        identifier: String,
+        authType: String,
+        password: String,
+        city: String = "Bouaké",
+        quartier: String = "Commerce",
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            when (val res = repository.registerUser(fullName, identifier, authType, password, city, quartier)) {
+                is com.example.data.repository.AuthResult.Success -> {
+                    _isAuthDialogOpen.value = false
+                    val cleanId = identifier.trim().lowercase()
+                    val isAuthorizedAdmin = cleanId in ADMIN_AUTHORIZED_EMAILS
+                    _isAdminLoggedIn.value = isAuthorizedAdmin
+                    showToast("🎉 Compte créé avec succès ! Bienvenue ${res.profile.fullName}.")
+                    onSuccess()
+                }
+                is com.example.data.repository.AuthResult.Error -> {
+                    showToast("⚠️ ${res.message}")
+                }
+            }
+        }
+    }
+
+    fun loginUser(
+        identifier: String,
+        authType: String,
+        password: String,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            when (val res = repository.loginUser(identifier, authType, password)) {
+                is com.example.data.repository.AuthResult.Success -> {
+                    _isAuthDialogOpen.value = false
+                    val cleanId = identifier.trim().lowercase()
+                    val isAuthorizedAdmin = cleanId in ADMIN_AUTHORIZED_EMAILS
+                    _isAdminLoggedIn.value = isAuthorizedAdmin
+                    if (isAuthorizedAdmin) {
+                        showToast("✨ Bienvenue Administrateur ${res.profile.fullName} ! Synchronisation active.")
+                    } else {
+                        showToast("👋 Bienvenue ${res.profile.fullName} ! Connexion réussie.")
+                    }
+                    onSuccess()
+                }
+                is com.example.data.repository.AuthResult.Error -> {
+                    showToast("⚠️ ${res.message}")
+                }
+            }
+        }
+    }
+
     fun loginWithPhone(phoneNumber: String, fullName: String, city: String = "Bouaké", quartier: String = "Commerce") {
         if (phoneNumber.isBlank()) {
             showToast("Veuillez saisir votre numéro de téléphone (ex: 07 00 00 00 00)")

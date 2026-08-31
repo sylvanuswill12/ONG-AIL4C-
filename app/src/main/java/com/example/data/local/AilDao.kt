@@ -17,6 +17,7 @@ import com.example.data.model.OrgInfoEntity
 import com.example.data.model.ProjectEntity
 import com.example.data.model.TrainingApplicationEntity
 import com.example.data.model.TrainingEntity
+import com.example.data.model.UserAccountEntity
 import com.example.data.model.UserBadgeEntity
 import com.example.data.model.UserProfileEntity
 import com.example.data.model.VolunteerRegistrationEntity
@@ -242,6 +243,25 @@ interface AilDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setAllOrgInfo(infoList: List<OrgInfoEntity>)
+
+    // --- Registered User Accounts ---
+    @Query("SELECT * FROM user_accounts ORDER BY registeredTimestamp DESC")
+    fun getAllUserAccounts(): Flow<List<UserAccountEntity>>
+
+    @Query("SELECT * FROM user_accounts WHERE id = :id LIMIT 1")
+    suspend fun getUserAccountById(id: String): UserAccountEntity?
+
+    @Query("SELECT * FROM user_accounts WHERE phoneNumber = :phone LIMIT 1")
+    suspend fun getUserAccountByPhone(phone: String): UserAccountEntity?
+
+    @Query("SELECT * FROM user_accounts WHERE LOWER(email) = LOWER(:email) LIMIT 1")
+    suspend fun getUserAccountByEmail(email: String): UserAccountEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUserAccount(account: UserAccountEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllUserAccounts(accounts: List<UserAccountEntity>)
 
     // --- User Profile & Auth ---
     @Query("SELECT * FROM user_profile WHERE id = 'current_user' LIMIT 1")

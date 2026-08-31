@@ -197,8 +197,8 @@ fun AilAppMain(viewModel: AilViewModel) {
         )
     }
 
-    // If no user account is logged in / registered, display AuthScreen first at startup
-    if (userProfile == null) {
+    // If no user account is logged in / registered, display AuthScreen as the mandatory first step
+    if (userProfile == null || !userProfile!!.isLoggedIn) {
         AuthScreen(
             viewModel = viewModel,
             onBack = null,
