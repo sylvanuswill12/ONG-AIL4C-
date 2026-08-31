@@ -104,13 +104,6 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
     private val _showUpdateModal = MutableStateFlow(false)
     val showUpdateModal: StateFlow<Boolean> = _showUpdateModal.asStateFlow()
 
-    init {
-        // Auto-check for updates on launch
-        checkForAppUpdates(silent = true)
-        triggerDailyLoginCheck()
-        loadDailyQuizState()
-    }
-
     // Feedback Toast / Snackbar event
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage: SharedFlow<String> = _toastMessage.asSharedFlow()
@@ -221,6 +214,13 @@ class AilViewModel(application: Application) : AndroidViewModel(application) {
     // Live Cloud Sync State
     val cloudSyncStatus: StateFlow<com.example.data.remote.CloudSyncStatus> = repository.cloudSyncStatus
         ?: MutableStateFlow(com.example.data.remote.CloudSyncStatus()).asStateFlow()
+
+    init {
+        // Auto-check for updates on launch
+        checkForAppUpdates(silent = true)
+        triggerDailyLoginCheck()
+        loadDailyQuizState()
+    }
 
     fun triggerManualCloudSync() {
         repository.triggerCloudSync { success ->
